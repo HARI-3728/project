@@ -15,9 +15,10 @@ app.use(helmet());
 app.use(mongoSanitize());
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+const allowedOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
-  .map((o) => o.trim());
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({

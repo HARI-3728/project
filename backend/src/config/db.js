@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/medicare_plus';
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    throw new Error('Missing required environment variable: MONGO_URI');
+  }
 
   const options = {
     serverSelectionTimeoutMS: 5000,

@@ -9,7 +9,7 @@ Prerequisites:
 - Node.js and npm
 - A running MongoDB instance for the backend
 
-Create `backend/.env` from `backend/.env.example` if it does not already exist, then configure `MONGO_URI` and a strong `JWT_SECRET`. Configure `LLM_API_KEY` to enable live AI chat. Do not put backend secrets in frontend environment files.
+Create `backend/.env` from `backend/.env.example` if it does not already exist, then configure `MONGO_URI` and a strong `JWT_SECRET`. Create `frontend/.env` from `frontend/.env.example`. Configure `LLM_API_KEY` to enable live AI chat. Do not put backend secrets in frontend environment files.
 
 From the repository root, run these commands in separate terminals:
 
@@ -25,11 +25,11 @@ npm install
 npm run dev
 ```
 
-The API health check is available at `http://localhost:5000/api/v1/health`. The Vite development server runs at `http://localhost:5173`.
+The default API health check is `http://localhost:5000/api/v1/health`, and the Vite development server runs at `http://localhost:5173`. Set `BACKEND_URL`, `PORT`, and `FRONTEND_URL` in `backend/.env`; the backend validates that `BACKEND_URL` uses the configured `PORT`. Set `FRONTEND_URL` and `VITE_BACKEND_URL` in `frontend/.env`; Vite binds to the frontend URL's host and port.
 
 ## Frontend API configuration
 
-The frontend reads `VITE_API_BASE_URL` from its environment. The example file uses `http://localhost:5000/api/v1`; set a different API base URL when the backend runs elsewhere. Only public API URLs belong in `VITE_*` variables.
+The API client builds its `/api/v1` base path from `VITE_BACKEND_URL`. Vite requires both frontend URL settings at startup and does not expose backend-only settings or secrets to browser code. Update both folders' `.env` files when changing development URLs.
 
 ## Checks
 

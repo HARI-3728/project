@@ -1,4 +1,9 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1').replace(/\/+$/, '');
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+if (!backendUrl) {
+  throw new Error('Missing VITE_BACKEND_URL in the frontend environment.');
+}
+
+const API_BASE_URL = `${new URL(backendUrl).origin}/api/v1`;
 
 const getAuthToken = () => localStorage.getItem('medicare_token');
 
