@@ -11,10 +11,18 @@
     "test:watch": "jest --watch --runInBand",
     "test:coverage": "jest --coverage --runInBand --forceExit"
   },
-  "keywords": ["healthcare", "mongodb", "express", "nodejs"],
+  "keywords": [
+    "healthcare",
+    "mongodb",
+    "express",
+    "nodejs"
+  ],
   "author": "MediCare+",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.15.0",
+    "@napi-rs/canvas": "^1.0.13",
+    "@tesseract.js-data/eng": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -29,21 +37,25 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
-    "uuid": "^10.0.0",
-    "winston": "^3.13.0",
     "openai": "^4.52.7",
-    "@google/generative-ai": "^0.15.0"
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
+    "tesseract.js": "^6.0.1",
+    "uuid": "^10.0.0",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "jest": "^29.7.0",
-    "supertest": "^7.0.0",
-    "nodemon": "^3.1.4",
     "mongodb-memory-server": "^10.0.0",
-    "@types/jest": "^29.5.12"
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
   },
   "jest": {
     "testEnvironment": "node",
     "testTimeout": 30000,
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   }
 }
