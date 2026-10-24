@@ -13,7 +13,6 @@ describe('server environment configuration', () => {
     expect(getServerConfig(validEnvironment)).toEqual({
       port: 5000,
       backendUrl: 'http://localhost:5000',
-      mongoUri: validEnvironment.MONGO_URI,
     });
   });
 

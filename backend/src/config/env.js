@@ -45,7 +45,6 @@ const getServerConfig = (env = process.env) => {
   return {
     port,
     backendUrl: backend.origin,
-    mongoUri: env.MONGO_URI,
   };
 };
 
