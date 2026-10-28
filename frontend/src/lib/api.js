@@ -1,9 +1,38 @@
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
-if (!backendUrl) {
-  throw new Error('Missing VITE_BACKEND_URL in the frontend environment.');
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+if (!apiUrl) {
+  throw new Error('Missing VITE_API_URL in the frontend environment.');
 }
 
-const API_BASE_URL = `${new URL(backendUrl).origin}/api/v1`;
+let parsedApiUrl;
+try {
+  parsedApiUrl = new URL(apiUrl);
+} catch {
+  throw new Error('VITE_API_URL must be an absolute http(s) origin without a path.');
+}
+
+if (
+  !['http:', 'https:'].includes(parsedApiUrl.protocol)
+  || parsedApiUrl.pathname !== '/'
+  || parsedApiUrl.search
+  || parsedApiUrl.hash
+  || parsedApiUrl.username
+  || parsedApiUrl.password
+) {
+  throw new Error('VITE_API_URL must be an absolute http(s) origin without a path.');
+}
+
+const isLoopbackApiHost = parsedApiUrl.hostname === 'localhost'
+  || parsedApiUrl.hostname.endsWith('.localhost')
+  || parsedApiUrl.hostname.startsWith('127.')
+  || parsedApiUrl.hostname === '[::1]';
+
+if (import.meta.env.PROD && isLoopbackApiHost) {
+  throw new Error('VITE_API_URL must not point to localhost in a production build.');
+}
+
+const apiOrigin = parsedApiUrl.origin;
+const API_BASE_URL = `${apiOrigin}/api/v1`;
 
 const getAuthToken = () => localStorage.getItem('medicare_token');
 

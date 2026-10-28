@@ -20,7 +20,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { LoadingState } from '../components/ui/LoadingState';
 import { DocumentViewer } from '../components/ui/DocumentViewer';
 import { DocumentAIChat } from '../components/ui/DocumentAIChat';
-import { api } from '../lib/api';
+import { api, getApiBaseUrl } from '../lib/api';
 import './pages.css';
 
 const recordTypeLabels = {
@@ -185,7 +185,7 @@ export const HealthRecords = () => {
 
   const handleDownload = (rec) => {
     const token = localStorage.getItem('medicare_token');
-    const url = `${new URL(import.meta.env.VITE_BACKEND_URL).origin}/api/v1/health-records/${rec.id}/download`;
+    const url = `${getApiBaseUrl()}/health-records/${rec.id}/download`;
     const a = document.createElement('a');
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {

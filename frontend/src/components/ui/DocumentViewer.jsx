@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Download, Eye, AlertCircle, Loader2, FileText, Image } from 'lucide-react';
 import { Button } from './Button';
+import { getApiBaseUrl } from '../../lib/api';
 import './ui.css';
 
-const API_BASE_URL = `${new URL(import.meta.env.VITE_BACKEND_URL).origin}/api/v1`;
+const API_BASE_URL = getApiBaseUrl();
 
 const getAuthToken = () => localStorage.getItem('medicare_token');
 
 const previewEndpoint = (documentType, documentId) =>
   documentType === 'prescription'
-    ? `/api/v1/prescriptions/${documentId}/preview`
-    : `/api/v1/health-records/${documentId}/preview`;
+    ? `/prescriptions/${documentId}/preview`
+    : `/health-records/${documentId}/preview`;
 
 const downloadEndpoint = (documentType, documentId) =>
   documentType === 'prescription'
-    ? `/api/v1/prescriptions/${documentId}/download`
-    : `/api/v1/health-records/${documentId}/download`;
+    ? `/prescriptions/${documentId}/download`
+    : `/health-records/${documentId}/download`;
 
 export const DocumentViewer = ({
   isOpen,

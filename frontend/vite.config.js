@@ -1,48 +1,72 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import react from '@vitejs/plugin-react';
+import { defineConfig, loadEnv } from 'vite';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const frontendUrl = env.FRONTEND_URL;
-  const backendUrl = env.VITE_BACKEND_URL;
+  let server;
 
-  if (!frontendUrl) {
-    throw new Error('Missing FRONTEND_URL in the frontend environment.');
-  }
-  if (!backendUrl) {
-    throw new Error('Missing VITE_BACKEND_URL in the frontend environment.');
-  }
+  if (command === 'build') {
+    const apiUrl = env.VITE_API_URL;
+    if (!apiUrl) {
+      throw new Error('Missing VITE_API_URL in the frontend environment.');
+    }
 
-  const parseOrigin = (value, name) => {
-    let url;
+    let apiOrigin;
     try {
-      url = new URL(value);
+      apiOrigin = new URL(apiUrl);
     } catch {
-      throw new Error(`${name} must be a valid absolute URL.`);
+      throw new Error('VITE_API_URL must be a valid absolute URL.');
     }
 
-    if (!['http:', 'https:'].includes(url.protocol) || url.pathname !== '/' || url.search || url.hash) {
-      throw new Error(`${name} must contain only an http(s) origin.`);
+    if (
+      !['http:', 'https:'].includes(apiOrigin.protocol)
+      || apiOrigin.pathname !== '/'
+      || apiOrigin.search
+      || apiOrigin.hash
+      || apiOrigin.username
+      || apiOrigin.password
+    ) {
+      throw new Error('VITE_API_URL must contain only an http(s) origin.');
     }
-    return url;
-  };
 
-  const frontendOrigin = parseOrigin(frontendUrl, 'FRONTEND_URL');
-  const backendOrigin = parseOrigin(backendUrl, 'VITE_BACKEND_URL');
-  const port = Number(frontendOrigin.port || (frontendOrigin.protocol === 'https:' ? 443 : 80));
+    if (
+      apiOrigin.hostname === 'localhost'
+      || apiOrigin.hostname.endsWith('.localhost')
+      || apiOrigin.hostname.startsWith('127.')
+      || apiOrigin.hostname === '[::1]'
+    ) {
+      throw new Error('VITE_API_URL must not point to localhost in a production build.');
+    }
+  }
 
-  return {
-    plugins: [react()],
-    server: {
+  if (mode === 'development') {
+    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    let frontendOrigin;
+    try {
+      frontendOrigin = new URL(frontendUrl);
+    } catch {
+      throw new Error('FRONTEND_URL must be a valid absolute URL.');
+    }
+
+    if (
+      !['http:', 'https:'].includes(frontendOrigin.protocol)
+      || frontendOrigin.pathname !== '/'
+      || frontendOrigin.search
+      || frontendOrigin.hash
+    ) {
+      throw new Error('FRONTEND_URL must contain only an http(s) origin.');
+    }
+
+    const port = Number(frontendOrigin.port || (frontendOrigin.protocol === 'https:' ? 443 : 80));
+    server = {
       host: frontendOrigin.hostname,
       port,
       strictPort: true,
-      proxy: {
-        '/api': {
-          target: backendOrigin.origin,
-          changeOrigin: true,
-        },
-      },
-    },
+    };
+  }
+
+  return {
+    plugins: [react()],
+    ...(server ? { server } : {}),
   };
 });

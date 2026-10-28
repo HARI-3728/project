@@ -37,10 +37,6 @@ const getServerConfig = (env = process.env) => {
   });
 
   const backend = parseOrigin(env.BACKEND_URL, 'BACKEND_URL');
-  const backendPort = Number(backend.port || (backend.protocol === 'https:' ? 443 : 80));
-  if (backendPort !== port) {
-    throw new Error(`BACKEND_URL port (${backendPort}) must match PORT (${port}).`);
-  }
 
   return {
     port,

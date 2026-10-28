@@ -18,7 +18,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { LoadingState } from '../components/ui/LoadingState';
 import { DocumentViewer } from '../components/ui/DocumentViewer';
 import { DocumentAIChat } from '../components/ui/DocumentAIChat';
-import { api } from '../lib/api';
+import { api, getApiBaseUrl } from '../lib/api';
 import './pages.css';
 
 const createMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -385,7 +385,7 @@ export const Prescriptions = () => {
                 <Button variant="outline" size="sm" icon={Download} onClick={() => {
                   const a = document.createElement('a');
                   const token = localStorage.getItem('medicare_token');
-                  const url = `${new URL(import.meta.env.VITE_BACKEND_URL).origin}/api/v1/prescriptions/${rx.id}/download`;
+                  const url = `${getApiBaseUrl()}/prescriptions/${rx.id}/download`;
                   fetch(url, { headers: { Authorization: `Bearer ${token}` } })
                     .then(r => r.blob())
                     .then(blob => {

@@ -16,11 +16,15 @@ describe('server environment configuration', () => {
     });
   });
 
-  it('rejects a backend URL whose port differs from PORT', () => {
-    expect(() => getServerConfig({
+  it('accepts a public backend origin whose port differs from the internal listen port', () => {
+    expect(getServerConfig({
       ...validEnvironment,
-      BACKEND_URL: 'http://localhost:5001',
-    })).toThrow('BACKEND_URL port (5001) must match PORT (5000).');
+      PORT: '10000',
+      BACKEND_URL: 'https://project-tvkl.onrender.com',
+    })).toEqual({
+      port: 10000,
+      backendUrl: 'https://project-tvkl.onrender.com',
+    });
   });
 
   it('reports missing required configuration by variable name', () => {
