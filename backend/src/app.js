@@ -45,8 +45,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
 }
 
-// ─── Static Uploads (private – only for authorized access via API) ──────────
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// ─── Document files (private – served only via authenticated controller endpoints) ───
+// The previous express.static('/uploads') exposed every patient document publicly.
+// Files are now served through preview/download routes that verify ownership.
 
 // ─── Global Rate Limiter ─────────────────────────────────────────────────────
 app.use('/api', generalLimiter);

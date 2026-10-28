@@ -39,6 +39,7 @@ const prescriptionSchema = new mongoose.Schema(
     diagnosis: { type: String, trim: true },
     notes: { type: String, trim: true },
     validUntil: { type: Date },
+    prescriptionDate: { type: Date }, // Date written on the prescription, when available
     // For uploaded prescriptions (files)
     fileUrl: { type: String, default: null },
     fileName: { type: String, default: null },
@@ -50,6 +51,16 @@ const prescriptionSchema = new mongoose.Schema(
       default: null,
     },
     verifiedAt: { type: Date, default: null },
+    // Document text extraction / OCR results
+    extractedText: { type: String, default: null },
+    processingStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending',
+    },
+    processingError: { type: String, default: null },
+    extractedAt: { type: Date, default: null },
+    ocrNote: { type: String, default: null },
   },
   { timestamps: true }
 );

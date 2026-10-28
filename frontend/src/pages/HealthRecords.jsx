@@ -4,13 +4,22 @@ import {
   Plus,
   Search,
   Eye,
-  RotateCcw,
-  AlertCircle
+  Download,
+  AlertCircle,
+  X,
+  RefreshCw,
+  FileText,
+  Stethoscope,
+  Bot,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
+import { LoadingState } from '../components/ui/LoadingState';
+import { DocumentViewer } from '../components/ui/DocumentViewer';
+import { DocumentAIChat } from '../components/ui/DocumentAIChat';
 import { api } from '../lib/api';
 import './pages.css';
 
@@ -31,13 +40,30 @@ const recordTypeValues = Object.fromEntries(
 const mapHealthRecord = (record) => ({
   ...record,
   id: record._id,
+  documentType: 'health-record',
   category: recordTypeLabels[record.recordType] || record.recordType,
   date: record.recordDate ? new Date(record.recordDate).toLocaleDateString() : '',
   facility: record.hospitalName || 'Facility not listed',
   doctor: record.doctorName || 'Doctor not listed',
   summary: record.description || 'No notes provided.',
-  status: record.fileUrl ? 'File attached' : 'Saved'
+  status: record.fileUrl ? 'File attached' : 'Saved',
+  processingStatus: record.processingStatus || 'pending',
+  extractedText: record.extractedText || null,
+  processingError: record.processingError || null,
+  ocrNote: record.ocrNote || null,
 });
+
+const STATUS_BADGE = {
+  completed: 'badge-success',
+  pending: 'badge-neutral',
+  failed: 'badge-danger',
+};
+
+const STATUS_LABEL = {
+  completed: 'Processed',
+  pending: 'Processing',
+  failed: 'Failed',
+};
 
 export const HealthRecords = () => {
   const [records, setRecords] = useState([]);
@@ -50,7 +76,9 @@ export const HealthRecords = () => {
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [viewerDoc, setViewerDoc] = useState(null);
+  const [chatDoc, setChatDoc] = useState(null);
+  const [detailsDoc, setDetailsDoc] = useState(null);
 
   // New Record Form State
   const [newRecordForm, setNewRecordForm] = useState({
@@ -61,12 +89,14 @@ export const HealthRecords = () => {
     doctor: '',
     notes: ''
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const loadRecords = async () => {
       try {
         const data = await api.get('/health-records/my', { requireAuth: true });
-        setRecords(data.map(mapHealthRecord));
+        setRecords(Array.isArray(data) ? data : (data.data || []));
       } catch (error) {
         setErrorMessage(error.message || 'Unable to load health records.');
       } finally {
@@ -91,20 +121,53 @@ export const HealthRecords = () => {
     });
   }, [records, searchQuery, selectedType]);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    const extension = file.name.split('.').pop().toLowerCase();
+    const validExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+
+    if (!validTypes.includes(file.type) && !validExtensions.includes(extension)) {
+      setErrorMessage('Invalid file format. Please upload a PDF, JPG, or PNG file.');
+      setSelectedFile(null);
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('File size exceeds the 5MB upload limit.');
+      setSelectedFile(null);
+      return;
+    }
+
+    setSelectedFile({
+      raw: file,
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      type: extension.toUpperCase(),
+    });
+  };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile ? selectedFile.raw : null);
+    formData.append('title', newRecordForm.title);
+    formData.append('recordType', recordTypeValues[newRecordForm.category]);
+    formData.append('recordDate', newRecordForm.date);
+    formData.append('hospitalName', newRecordForm.facility);
+    formData.append('doctorName', newRecordForm.doctor);
+    formData.append('description', newRecordForm.notes);
+
     try {
-      const record = await api.post('/health-records', {
-        title: newRecordForm.title,
-        recordType: recordTypeValues[newRecordForm.category],
-        recordDate: newRecordForm.date,
-        hospitalName: newRecordForm.facility,
-        doctorName: newRecordForm.doctor,
-        description: newRecordForm.notes
-      }, { requireAuth: true });
-      setRecords((previous) => [mapHealthRecord(record), ...previous]);
+      setIsUploading(true);
+      const response = await api.post('/health-records', formData, { requireAuth: true });
+      setRecords((previous) => [mapHealthRecord(response), ...previous]);
       setIsAddModalOpen(false);
+      setSelectedFile(null);
       setNewRecordForm({
         title: '',
         category: 'Lab Report',
@@ -115,6 +178,41 @@ export const HealthRecords = () => {
       });
     } catch (error) {
       setErrorMessage(error.message || 'Unable to save this health record.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownload = (rec) => {
+    const token = localStorage.getItem('medicare_token');
+    const url = `${new URL(import.meta.env.VITE_BACKEND_URL).origin}/api/v1/health-records/${rec.id}/download`;
+    const a = document.createElement('a');
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+        if (!r.ok) throw new Error('Download failed.');
+        return r.blob();
+      })
+      .then(blob => {
+        const objectUrl = URL.createObjectURL(blob);
+        a.href = objectUrl;
+        a.download = rec.fileName || 'health-record';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(objectUrl);
+      })
+      .catch(() => setErrorMessage('Download failed.'));
+  };
+
+  const handleReprocess = async (rec) => {
+    try {
+      const response = await api.post(`/health-records/${rec.id}/reprocess`, {}, { requireAuth: true });
+      const data = response.data || response;
+      const updated = mapHealthRecord(data);
+      setRecords(prev => prev.map(p => p.id === updated.id ? updated : p));
+      setErrorMessage('Health record document reprocessed successfully.');
+    } catch (error) {
+      setErrorMessage(error.message || 'Reprocessing failed.');
     }
   };
 
@@ -123,7 +221,7 @@ export const HealthRecords = () => {
       <div className="page-header">
         <div>
           <h2 className="page-title">Health Records ({records.length})</h2>
-          <p className="page-subtitle">Log medical records, search diagnostic reports, and manage health notes</p>
+          <p className="page-subtitle">Log medical records, upload diagnostic reports, and manage health notes</p>
         </div>
         <Button variant="primary" icon={Plus} onClick={() => setIsAddModalOpen(true)}>
           Add Health Record
@@ -135,10 +233,6 @@ export const HealthRecords = () => {
           <span>{errorMessage}</span>
         </div>
       )}
-
-      <div className="upload-alert" role="note">
-        Vitals are not currently exposed by the backend API; this page shows persisted medical records only.
-      </div>
 
       {/* Module B: Search & Filter Toolbar */}
       <div className="medicine-filter-panel" style={{ marginTop: '2rem' }}>
@@ -174,7 +268,7 @@ export const HealthRecords = () => {
           </div>
 
           {(searchQuery || selectedType !== 'All') && (
-            <Button variant="outline" size="sm" icon={RotateCcw} onClick={() => { setSearchQuery(''); setSelectedType('All'); }}>
+            <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => { setSearchQuery(''); setSelectedType('All'); }}>
               Reset Filter
             </Button>
           )}
@@ -188,7 +282,7 @@ export const HealthRecords = () => {
         </h3>
 
         {isLoading ? (
-          <p role="status">Loading health records...</p>
+          <LoadingState count={3} type="card" />
         ) : filteredRecords.length > 0 ? (
           <div className="records-list">
             {filteredRecords.map(rec => (
@@ -220,11 +314,69 @@ export const HealthRecords = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <span className="badge badge-success">{rec.status}</span>
-                  <Button variant="outline" size="sm" icon={Eye} onClick={() => setSelectedRecord(rec)}>
-                    View
+                {rec.extractedText && (
+                  <div style={{ backgroundColor: 'var(--primary-50)', border: '1px solid var(--primary-100)', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--primary-800)', fontWeight: '700', marginBottom: '0.4rem' }}>
+                      Extracted Details
+                    </p>
+                    <div style={{ fontSize: '0.825rem', color: 'var(--neutral-800)', whiteSpace: 'pre-wrap' }}>
+                      {rec.extractedText.slice(0, 300)}{rec.extractedText.length > 300 ? '...' : ''}
+                    </div>
+                    {rec.ocrNote && (
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                        {rec.ocrNote}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {rec.processingStatus === 'failed' && (
+                  <div style={{ backgroundColor: '#ffe4e6', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#e11d48', fontWeight: '700', marginBottom: '0.3rem' }}>
+                      Processing Failed
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: '#e11d48' }}>
+                      {rec.processingError || 'Unable to extract text from this document.'}
+                    </p>
+                  </div>
+                )}
+
+                {rec.processingStatus === 'completed' && !rec.extractedText && rec.ocrNote && (
+                  <div style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: '700', marginBottom: '0.3rem' }}>
+                      No Readable Text
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: '#92400e' }}>
+                      {rec.ocrNote}
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
+                  <Button variant="outline" size="sm" icon={Eye} onClick={() => setViewerDoc(rec)}>
+                    View Document
                   </Button>
+                  <Button variant="outline" size="sm" icon={Download} onClick={() => handleDownload(rec)}>
+                    Download
+                  </Button>
+                  <Button variant="outline" size="sm" icon={FileText} onClick={() => setDetailsDoc(rec)}>
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={Bot}
+                    style={{ backgroundColor: 'var(--accent-purple-light)', color: 'var(--accent-purple)', border: '1px solid rgba(124, 58, 237, 0.2)' }}
+                    onClick={() => setChatDoc(rec)}
+                    disabled={rec.processingStatus === 'failed' && !rec.extractedText}
+                  >
+                    Ask MediCare AI
+                  </Button>
+                  {rec.processingStatus === 'failed' && (
+                    <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => handleReprocess(rec)}>
+                      Retry
+                    </Button>
+                  )}
                 </div>
               </Card>
             ))}
@@ -232,10 +384,11 @@ export const HealthRecords = () => {
         ) : (
           <EmptyState
             icon={FileCheck}
-            title="No Records Found"
-            description="No health records match your current search query or filter selection."
-            actionText="Reset Filter"
-            onAction={() => { setSearchQuery(''); setSelectedType('All'); }}
+            title="No Health Records Found"
+            description="Upload a health record document to get started. Once uploaded, you can view, download, and ask MediCare AI about it."
+            actionText="Add Health Record"
+            onAction={() => setIsAddModalOpen(true)}
+            actionIcon={Plus}
           />
         )}
       </div>
@@ -245,7 +398,7 @@ export const HealthRecords = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Health Record"
-        subtitle="Log diagnostic lab report, imaging result, or health notes"
+        subtitle="Upload a diagnostic lab report, imaging result, or health notes document"
       >
         <form onSubmit={handleAddSubmit} className="auth-form">
           <div className="form-group">
@@ -258,6 +411,39 @@ export const HealthRecords = () => {
               placeholder="e.g. Comprehensive Blood Panel 2026"
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label>Upload Document (PDF, JPG, PNG)</label>
+            <div className="file-drop-zone" style={{ border: '2px dashed var(--primary-300)', backgroundColor: 'var(--primary-50)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', marginBottom: '1rem' }}>
+              <input
+                type="file"
+                id="hr-file-input"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleFileChange}
+                className="hidden-file-input"
+              />
+              <label htmlFor="hr-file-input" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                <FileText size={32} style={{ color: 'var(--primary-600)' }} />
+                <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: '600', color: 'var(--neutral-900)' }}>
+                  {selectedFile ? `Selected: ${selectedFile.name}` : 'Click to browse or drag & drop'}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Supported formats: PDF, JPG, PNG (Max 5MB)
+                </p>
+              </label>
+              {selectedFile && (
+                <button
+                  type="button"
+                  className="remove-file-btn"
+                  onClick={() => setSelectedFile(null)}
+                  title="Remove selected file"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+            {isUploading && <p style={{ fontSize: '0.8rem', color: 'var(--primary-700)', fontWeight: '600' }}>Uploading document...</p>}
           </div>
 
           <div className="form-grid-2">
@@ -329,39 +515,85 @@ export const HealthRecords = () => {
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" isLoading={isUploading} disabled={isUploading}>
               Save Health Record
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* View Detail Modal */}
-      {selectedRecord && (
+      {/* Document Viewer Modal */}
+      <DocumentViewer
+        isOpen={Boolean(viewerDoc)}
+        onClose={() => setViewerDoc(null)}
+        document={viewerDoc}
+      />
+
+      {/* Document AI Chat Modal */}
+      <DocumentAIChat
+        isOpen={Boolean(chatDoc)}
+        onClose={() => setChatDoc(null)}
+        document={{ ...chatDoc, documentType: 'health-record' }}
+      />
+
+      {/* Details Modal */}
+      {detailsDoc && (
         <Modal
-          isOpen={Boolean(selectedRecord)}
-          onClose={() => setSelectedRecord(null)}
-          title={`Health Record: ${selectedRecord.title}`}
-          subtitle={`${selectedRecord.category} • ${selectedRecord.date}`}
+          isOpen={Boolean(detailsDoc)}
+          onClose={() => setDetailsDoc(null)}
+          title={`Health Record Details: ${detailsDoc.fileName || 'Untitled'}`}
+          subtitle={`${detailsDoc.category} • ${detailsDoc.date}`}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ backgroundColor: 'var(--neutral-50)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Facility & Attending Physician</p>
-              <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>
-                {selectedRecord.facility} — Attending: {selectedRecord.doctor}
-              </p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Record Source</p>
+              <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>{detailsDoc.fileName}</p>
             </div>
 
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.35rem' }}>Medical Summary & Notes</h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--neutral-800)', lineHeight: '1.5' }}>
-                {selectedRecord.summary}
+              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' }}>Facility & Doctor</h4>
+              <p style={{ fontSize: '0.875rem', color: 'var(--neutral-800)' }}>
+                Facility: <strong>{detailsDoc.facility}</strong> &bull; Doctor: <strong>{detailsDoc.doctor}</strong>
               </p>
             </div>
 
-            <div className="modal-footer" style={{ margin: '1rem -1.5rem -1.5rem -1.5rem' }}>
-              <Button variant="outline" onClick={() => setSelectedRecord(null)}>
-                Close Record
+            {detailsDoc.extractedText && (
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' }}>Extracted Content</h4>
+                <div style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', fontSize: '0.875rem', color: 'var(--neutral-800)', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
+                  {detailsDoc.extractedText}
+                </div>
+              </div>
+            )}
+
+            {detailsDoc.ocrNote && (
+              <div style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#92400e', fontWeight: '700', marginBottom: '0.3rem' }}>
+                  Processing Note
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#92400e' }}>
+                  {detailsDoc.ocrNote}
+                </p>
+              </div>
+            )}
+
+            {detailsDoc.processingError && (
+              <div style={{ backgroundColor: '#ffe4e6', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#e11d48', fontWeight: '700', marginBottom: '0.3rem' }}>
+                  Processing Error
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#e11d48' }}>
+                  {detailsDoc.processingError}
+                </p>
+              </div>
+            )}
+
+            <div className="modal-footer" style={{ margin: '1rem -1.5rem -1.5rem -1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <Button variant="outline" onClick={() => setDetailsDoc(null)}>
+                Close
+              </Button>
+              <Button variant="primary" onClick={() => { setDetailsDoc(null); setViewerDoc(detailsDoc); }}>
+                View Document
               </Button>
             </div>
           </div>

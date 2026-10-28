@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGODB_URI;
   if (!uri) {
     throw new Error('Missing required environment variable: MONGO_URI');
   }

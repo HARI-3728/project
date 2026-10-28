@@ -4,6 +4,8 @@ const VaccinationReminder = require('../models/VaccinationReminder');
 const User = require('../models/User');
 const { sendSuccess, sendError, sendPaginated } = require('../utils/response');
 const { notifyPrescriptionIssued } = require('../services/notification.service');
+const { processDocumentRecord } = require('../services/document.service');
+const fs = require('fs');
 const path = require('path');
 
 // ─── PRESCRIPTIONS ──────────────────────────────────────────────────────────
@@ -49,7 +51,7 @@ const doctorAddPrescription = async (req, res, next) => {
 };
 
 // @desc   Upload a prescription (patient)
-// @route  POST /api/v1/prescriptions
+// @route  POST /api/v1/prescriptions/upload
 // @access Private (Patient)
 const uploadPrescription = async (req, res, next) => {
   try {
@@ -57,7 +59,7 @@ const uploadPrescription = async (req, res, next) => {
       return sendError(res, 400, 'Please upload a prescription file (JPEG, PNG, or PDF).');
     }
 
-    const { diagnosis } = req.body;
+    const { diagnosis, prescriptionDate } = req.body;
     const fileUrl = `/uploads/${req.user._id}/${req.file.filename}`;
 
     const prescription = await Prescription.create({
@@ -67,10 +69,22 @@ const uploadPrescription = async (req, res, next) => {
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
       diagnosis: diagnosis?.trim() || undefined,
+      prescriptionDate: prescriptionDate || undefined,
       isVerified: false,
+      processingStatus: 'pending',
     });
 
-    return sendSuccess(res, 201, 'Prescription uploaded successfully', prescription);
+    // Extract text from the uploaded document (PDF text or image OCR).
+    // Errors here are recorded on the document record; the upload still succeeds.
+    try {
+      await processDocumentRecord(Prescription, prescription._id);
+    } catch (processError) {
+      // Non-fatal: the document is saved and can be retried later.
+    }
+
+    const saved = await Prescription.findById(prescription._id);
+
+    return sendSuccess(res, 201, 'Prescription uploaded successfully', saved);
   } catch (error) {
     next(error);
   }
@@ -118,6 +132,67 @@ const getPrescriptionById = async (req, res, next) => {
     }
 
     return sendSuccess(res, 200, 'Prescription retrieved', prescription);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc   Preview an uploaded prescription document (inline)
+// @route  GET /api/v1/prescriptions/:id/preview
+// @access Private
+const previewPrescription = async (req, res, next) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return sendError(res, 404, 'Prescription not found.');
+
+    const userId = req.user._id.toString();
+    const isPatient = prescription.patient.toString() === userId;
+    const isDoctor = prescription.doctor?._id?.toString() === userId;
+    if (!isPatient && !isDoctor && req.user.role !== 'hospital') {
+      return sendError(res, 403, 'Access denied.');
+    }
+
+    serveDocumentFile(res, prescription);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc   Download an uploaded prescription document
+// @route  GET /api/v1/prescriptions/:id/download
+// @access Private
+const downloadPrescription = async (req, res, next) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return sendError(res, 404, 'Prescription not found.');
+
+    const userId = req.user._id.toString();
+    const isPatient = prescription.patient.toString() === userId;
+    const isDoctor = prescription.doctor?._id?.toString() === userId;
+    if (!isPatient && !isDoctor && req.user.role !== 'hospital') {
+      return sendError(res, 403, 'Access denied.');
+    }
+
+    serveDocumentFile(res, prescription, true);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc   Re-process a prescription document (retry text extraction / OCR)
+// @route  POST /api/v1/prescriptions/:id/reprocess
+// @access Private (Patient)
+const reprocessPrescription = async (req, res, next) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return sendError(res, 404, 'Prescription not found.');
+
+    if (prescription.patient.toString() !== req.user._id.toString()) {
+      return sendError(res, 403, 'Access denied.');
+    }
+
+    const updated = await processDocumentRecord(Prescription, prescription._id);
+    return sendSuccess(res, 200, 'Prescription document processing finished', updated);
   } catch (error) {
     next(error);
   }
@@ -350,11 +425,41 @@ const deleteVaccinationReminder = async (req, res, next) => {
   }
 };
 
+// Serve a stored document file with the correct inline/attachment disposition.
+// The file is never exposed through a public URL: only these authenticated
+// controller endpoints can serve it, after ownership/role checks.
+const serveDocumentFile = (res, record, asAttachment = false) => {
+  const fileName = path.basename(record.fileUrl || '');
+  const filePath = path.resolve(__dirname, '..', '..', 'uploads', record.patient.toString(), fileName);
+
+  if (!fileName || !fs.existsSync(filePath)) {
+    return sendError(res, 404, 'The document file is no longer available on the server.');
+  }
+
+  const extension = path.extname(fileName).toLowerCase();
+  const contentType =
+    extension === '.pdf' ? 'application/pdf' :
+    extension === '.jpg' || extension === '.jpeg' ? 'image/jpeg' :
+    extension === '.png' ? 'image/png' :
+    record.fileType || 'application/octet-stream';
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', asAttachment
+    ? `attachment; filename="${record.fileName || fileName}"`
+    : `inline; filename="${record.fileName || fileName}"`);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.sendFile(filePath);
+};
+
 module.exports = {
   doctorAddPrescription,
   uploadPrescription,
   getMyPrescriptions,
   getPrescriptionById,
+  previewPrescription,
+  downloadPrescription,
+  reprocessPrescription,
   getDoctorPrescriptions,
   createMedicineReminder,
   getMyMedicineReminders,

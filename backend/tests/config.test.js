@@ -4,7 +4,7 @@ const validEnvironment = {
   PORT: '5000',
   FRONTEND_URL: 'http://localhost:5173',
   BACKEND_URL: 'http://localhost:5000',
-  MONGO_URI: 'mongodb://localhost:27017/medicare_plus',
+  MONGODB_URI: 'mongodb+srv://test_user:testpass@cluster0.test.mongodb.net/MediCarePlus?retryWrites=true&w=majority',
   JWT_SECRET: 'test-secret',
 };
 

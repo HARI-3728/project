@@ -3,15 +3,25 @@ import {
   FileText,
   Upload,
   Eye,
-  CheckCircle2,
+  Download,
   AlertCircle,
   X,
+  RefreshCw,
+  Stethoscope,
+  Bot,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
+import { LoadingState } from '../components/ui/LoadingState';
+import { DocumentViewer } from '../components/ui/DocumentViewer';
+import { DocumentAIChat } from '../components/ui/DocumentAIChat';
 import { api } from '../lib/api';
 import './pages.css';
+
+const createMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
 const mapPrescription = (prescription) => {
   const expired = prescription.validUntil && new Date(prescription.validUntil) < new Date();
@@ -22,11 +32,13 @@ const mapPrescription = (prescription) => {
   return {
     ...prescription,
     id: prescription._id,
+    documentType: 'prescription',
     code: prescription._id?.slice(-8).toUpperCase() || 'Prescription',
-    doctorName: prescription.doctor?.name || 'Doctor not listed',
+    doctorName: prescription.doctor?.name || prescription.doctorName || 'Doctor not listed',
     specialty: prescription.prescriptionType === 'uploaded' ? 'Uploaded document' : 'Doctor-issued',
-    clinicName: prescription.fileName || 'Clinic not listed',
+    clinicName: prescription.hospitalName || prescription.clinicName || 'Clinic not listed',
     date: prescription.createdAt ? new Date(prescription.createdAt).toLocaleDateString() : '',
+    prescriptionDate: prescription.prescriptionDate ? new Date(prescription.prescriptionDate).toLocaleDateString() : '',
     status,
     medicines: (prescription.medicines || []).map((medicine) => ({
       name: medicine.medicineName,
@@ -34,39 +46,50 @@ const mapPrescription = (prescription) => {
       instructions: [medicine.frequency, medicine.instructions].filter(Boolean).join(' · ') || 'No instructions recorded'
     })),
     diagnosis: prescription.diagnosis || 'Not recorded',
-    notes: prescription.notes || ''
+    notes: prescription.notes || '',
+    processingStatus: prescription.processingStatus || 'pending',
+    extractedText: prescription.extractedText || null,
+    processingError: prescription.processingError || null,
+    ocrNote: prescription.ocrNote || null,
   };
+};
+
+const STATUS_BADGE = {
+  completed: 'badge-success',
+  pending: 'badge-neutral',
+  failed: 'badge-danger',
+};
+
+const STATUS_LABEL = {
+  completed: 'Processed',
+  pending: 'Processing',
+  failed: 'Failed',
 };
 
 export const Prescriptions = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
 
   // File Upload State
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
   const [uploadErrorMsg, setUploadErrorMsg] = useState('');
-
   const [diagnosisInput, setDiagnosisInput] = useState('');
 
-  // View & Delete Modal States
-  const [selectedRx, setSelectedRx] = useState(null);
+  // Modal States
+  const [viewerDoc, setViewerDoc] = useState(null);
+  const [chatDoc, setChatDoc] = useState(null);
+  const [detailsDoc, setDetailsDoc] = useState(null);
 
-  const filteredRx = prescriptions.filter(rx => {
-    if (activeTab === 'All') return true;
-    if (activeTab === 'Active') return rx.status === 'Active';
-    if (activeTab === 'Pending verification') return rx.status === 'Pending verification';
-    return rx.status === 'Completed' || rx.status === 'Verified';
-  });
+  const filteredRx = prescriptions;
 
   useEffect(() => {
     const loadPrescriptions = async () => {
       try {
         const data = await api.get('/prescriptions/my', { requireAuth: true });
-        setPrescriptions(data.map(mapPrescription));
+        setPrescriptions(Array.isArray(data) ? data : (data.data || []));
       } catch (error) {
         setLoadError(error.message || 'Unable to load prescriptions.');
       } finally {
@@ -84,7 +107,6 @@ export const Prescriptions = () => {
 
     if (!file) return;
 
-    // Validate file type (PDF, JPG, PNG)
     const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     const extension = file.name.split('.').pop().toLowerCase();
     const validExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
@@ -95,7 +117,6 @@ export const Prescriptions = () => {
       return;
     }
 
-    // The backend upload limit defaults to 5MB.
     if (file.size > 5 * 1024 * 1024) {
       setUploadErrorMsg('File size exceeds the 5MB upload limit. Please select a smaller file.');
       setSelectedFile(null);
@@ -106,7 +127,7 @@ export const Prescriptions = () => {
       raw: file,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      type: extension.toUpperCase()
+      type: extension.toUpperCase(),
     });
   };
 
@@ -123,10 +144,11 @@ export const Prescriptions = () => {
     const formData = new FormData();
     formData.append('prescription', selectedFile.raw);
     if (diagnosisInput.trim()) formData.append('diagnosis', diagnosisInput.trim());
+    if (diagnosisInput.trim()) formData.append('prescriptionDate', new Date().toISOString().split('T')[0]);
 
     try {
-      const prescription = await api.post('/prescriptions/upload', formData, { requireAuth: true });
-      setPrescriptions((previous) => [mapPrescription(prescription), ...previous]);
+      const response = await api.post('/prescriptions/upload', formData, { requireAuth: true });
+      setPrescriptions((previous) => [mapPrescription(response), ...previous]);
       setUploadSuccessMsg(`Prescription "${selectedFile.name}" successfully uploaded and saved!`);
       setSelectedFile(null);
       setDiagnosisInput('');
@@ -134,6 +156,18 @@ export const Prescriptions = () => {
       setUploadErrorMsg(error.message || 'Unable to upload this prescription.');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleReprocess = async (rx) => {
+    try {
+      const response = await api.post(`/prescriptions/${rx.id}/reprocess`, {}, { requireAuth: true });
+      const data = response.data || response;
+      const updated = mapPrescription(data);
+      setPrescriptions(prev => prev.map(p => p.id === updated.id ? updated : p));
+      setUploadSuccessMsg('Prescription document reprocessed successfully.');
+    } catch (error) {
+      setUploadErrorMsg(error.message || 'Reprocessing failed.');
     }
   };
 
@@ -164,7 +198,7 @@ export const Prescriptions = () => {
 
         {uploadSuccessMsg && (
           <div className="upload-alert success">
-            <CheckCircle2 size={18} />
+            <Stethoscope size={18} />
             <span>{uploadSuccessMsg}</span>
           </div>
         )}
@@ -177,7 +211,6 @@ export const Prescriptions = () => {
         )}
 
         <form onSubmit={handleUploadSubmit} className="upload-form">
-          {/* Drag & Drop File Zone */}
           <div className="file-drop-zone">
             <input
               type="file"
@@ -197,7 +230,6 @@ export const Prescriptions = () => {
             </label>
           </div>
 
-          {/* Selected File Preview Box */}
           {selectedFile && (
             <div className="selected-file-preview fade-in">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -229,7 +261,6 @@ export const Prescriptions = () => {
             />
           </div>
 
-          {/* Upload Progress Bar */}
           {isUploading && <p role="status">Uploading prescription file...</p>}
 
           <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
@@ -246,133 +277,218 @@ export const Prescriptions = () => {
         </form>
       </Card>
 
-      {/* Tabs for Previous Prescriptions */}
-      <div style={{ margin: '2rem 0 1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* Previous Prescriptions List */}
+      <div style={{ margin: '2rem 0 1.25rem 0' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: '800' }}>
           Previous Prescriptions ({filteredRx.length})
         </h3>
-        <div className="category-chips">
-          {['All', 'Active', 'Pending verification', 'Completed'].map(tab => (
-            <button
-              key={tab}
-              className={`chip ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
+      </div>
+
+      {isLoading ? (
+        <LoadingState count={3} type="card" />
+      ) : filteredRx.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No Prescriptions Found"
+          description="Upload a prescription document to get started. Once uploaded, you can view, download, and ask MediCare AI about it."
+          actionText="Upload a Prescription"
+          onAction={() => window.scrollTo(0, 0)}
+          actionIcon={Upload}
+        />
+      ) : (
+        <div className="prescriptions-list">
+          {filteredRx.map(rx => (
+            <Card key={rx.id} className="rx-card" hoverable>
+              <div className="rx-header">
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--primary-100)',
+                    color: 'var(--primary-700)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <FileText size={22} />
+                  </div>
+                  <div>
+                    <h3 className="rx-doc-name">{rx.fileName || 'Untitled Prescription'}</h3>
+                    <p className="rx-doc-sub">{rx.doctorName} • {rx.specialty}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <span className={`badge ${STATUS_BADGE[rx.processingStatus] || 'badge-neutral'}`}>
+                    {STATUS_LABEL[rx.processingStatus] || rx.processingStatus}
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {rx.prescriptionDate || rx.date}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ padding: '0.75rem 0' }}>
+                {rx.diagnosis && rx.diagnosis !== 'Not recorded' && (
+                  <p style={{ fontSize: '0.875rem', color: 'var(--neutral-800)', marginBottom: '0.5rem' }}>
+                    Diagnosis: <strong>{rx.diagnosis}</strong>
+                  </p>
+                )}
+
+                {rx.extractedText ? (
+                  <div style={{ backgroundColor: 'var(--primary-50)', border: '1px solid var(--primary-100)', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--primary-800)', fontWeight: '700', marginBottom: '0.4rem' }}>
+                      Extracted Details
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.65rem', fontSize: '0.825rem', color: 'var(--neutral-800)' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Medicines / Text</span>
+                        <span>{rx.extractedText.slice(0, 200)}{rx.extractedText.length > 200 ? '...' : ''}</span>
+                      </div>
+                    </div>
+                    {rx.ocrNote && (
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                        {rx.ocrNote}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  rx.processingStatus === 'failed' && (
+                    <div style={{ backgroundColor: '#ffe4e6', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                      <p style={{ fontSize: '0.8rem', color: '#e11d48', fontWeight: '700', marginBottom: '0.3rem' }}>
+                        Processing Failed
+                      </p>
+                      <p style={{ fontSize: '0.78rem', color: '#e11d48' }}>
+                        {rx.processingError || 'Unable to extract text from this document.'}
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {rx.processingStatus === 'completed' && !rx.extractedText && rx.ocrNote && (
+                  <div style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: '700', marginBottom: '0.3rem' }}>
+                      No Readable Text
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: '#92400e' }}>
+                      {rx.ocrNote}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
+                <Button variant="outline" size="sm" icon={Eye} onClick={() => setViewerDoc(rx)}>
+                  View Document
+                </Button>
+                <Button variant="outline" size="sm" icon={Download} onClick={() => {
+                  const a = document.createElement('a');
+                  const token = localStorage.getItem('medicare_token');
+                  const url = `${new URL(import.meta.env.VITE_BACKEND_URL).origin}/api/v1/prescriptions/${rx.id}/download`;
+                  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+                    .then(r => r.blob())
+                    .then(blob => {
+                      const objectUrl = URL.createObjectURL(blob);
+                      a.href = objectUrl;
+                      a.download = rx.fileName || 'prescription';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(objectUrl);
+                    });
+                }}>
+                  Download
+                </Button>
+                <Button variant="outline" size="sm" icon={FileText} onClick={() => setDetailsDoc(rx)}>
+                  View Details
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Bot}
+                  style={{ backgroundColor: 'var(--accent-purple-light)', color: 'var(--accent-purple)', border: '1px solid rgba(124, 58, 237, 0.2)' }}
+                  onClick={() => setChatDoc(rx)}
+                  disabled={rx.processingStatus === 'failed' && !rx.extractedText}
+                >
+                  Ask MediCare AI
+                </Button>
+                {rx.processingStatus === 'failed' && (
+                  <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => handleReprocess(rx)}>
+                    Retry
+                  </Button>
+                )}
+              </div>
+            </Card>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Prescriptions List */}
-      <div className="prescriptions-list">
-        {isLoading ? <p role="status">Loading prescriptions...</p> : filteredRx.map(rx => (
-          <Card key={rx.id} className="rx-card" hoverable>
-            <div className="rx-header">
-              <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--primary-100)',
-                  color: 'var(--primary-700)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <FileText size={22} />
-                </div>
-                <div>
-                  <h3 className="rx-doc-name">{rx.doctorName}</h3>
-                  <p className="rx-doc-sub">{rx.specialty} • {rx.clinicName}</p>
-                </div>
-              </div>
+      {/* Document Viewer Modal */}
+      <DocumentViewer
+        isOpen={Boolean(viewerDoc)}
+        onClose={() => setViewerDoc(null)}
+        document={viewerDoc}
+      />
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className={`badge ${rx.status === 'Active' || rx.status === 'Verified' ? 'badge-success' : 'badge-neutral'}`}>
-                  {rx.status}
-                </span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {rx.date}
-                </span>
-              </div>
-            </div>
+      {/* Document AI Chat Modal */}
+      <DocumentAIChat
+        isOpen={Boolean(chatDoc)}
+        onClose={() => setChatDoc(null)}
+        document={{ ...chatDoc, documentType: 'prescription' }}
+      />
 
-            <div style={{ padding: '0.5rem 0' }}>
-              <p style={{ fontSize: '0.9rem', color: 'var(--neutral-800)', marginBottom: '0.65rem' }}>
-                Diagnosis: <strong>{rx.diagnosis}</strong>
-              </p>
-
-              <table className="rx-meds-table">
-                <thead>
-                  <tr>
-                    <th>Medication Name</th>
-                    <th>Duration</th>
-                    <th>Instructions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rx.medicines.length ? rx.medicines.map((med, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: '700', color: 'var(--neutral-900)' }}>{med.name}</td>
-                      <td>{med.duration}</td>
-                      <td style={{ color: 'var(--primary-700)', fontWeight: '600' }}>{med.instructions}</td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan="3">{rx.fileName || 'No medicine details recorded for this document.'}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-
-              <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.65rem' }}>
-                Notes: "{rx.notes}"
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
-              <Button variant="outline" size="sm" icon={Eye} onClick={() => setSelectedRx(rx)}>
-                View Prescription
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* View Detail Modal */}
-      {selectedRx && (
+      {/* Details Modal */}
+      {detailsDoc && (
         <Modal
-          isOpen={Boolean(selectedRx)}
-          onClose={() => setSelectedRx(null)}
-          title={`Prescription Record: ${selectedRx.code}`}
-          subtitle={`${selectedRx.doctorName} • ${selectedRx.date}`}
+          isOpen={Boolean(detailsDoc)}
+          onClose={() => setDetailsDoc(null)}
+          title={`Prescription Details: ${detailsDoc.fileName || 'Untitled'}`}
+          subtitle={`${detailsDoc.doctorName} • ${detailsDoc.prescriptionDate || detailsDoc.date}`}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ backgroundColor: 'var(--neutral-50)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Record Source</p>
-              <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>{selectedRx.clinicName}</p>
+              <p style={{ fontWeight: '700', fontSize: '0.95rem' }}>{detailsDoc.fileName}</p>
             </div>
 
-            <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' }}>Prescribed Items</h4>
-              <ul style={{ paddingLeft: '1.25rem' }}>
-                {selectedRx.medicines.map((med, idx) => (
-                  <li key={idx} style={{ marginBottom: '0.35rem', fontSize: '0.9rem' }}>
-                    <strong>{med.name}</strong> — {med.instructions} ({med.duration})
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {detailsDoc.extractedText && (
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.5rem' }}>Extracted Content</h4>
+                <div style={{ backgroundColor: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem', fontSize: '0.875rem', color: 'var(--neutral-800)', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
+                  {detailsDoc.extractedText}
+                </div>
+              </div>
+            )}
 
-            <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.35rem' }}>Doctor Notes</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--neutral-700)' }}>{selectedRx.notes}</p>
-            </div>
+            {detailsDoc.ocrNote && (
+              <div style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#92400e', fontWeight: '700', marginBottom: '0.3rem' }}>
+                  Processing Note
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#92400e' }}>
+                  {detailsDoc.ocrNote}
+                </p>
+              </div>
+            )}
 
-            <div className="modal-footer" style={{ margin: '1rem -1.5rem -1.5rem -1.5rem' }}>
-              <Button variant="outline" onClick={() => setSelectedRx(null)}>
+            {detailsDoc.processingError && (
+              <div style={{ backgroundColor: '#ffe4e6', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#e11d48', fontWeight: '700', marginBottom: '0.3rem' }}>
+                  Processing Error
+                </p>
+                <p style={{ fontSize: '0.85rem', color: '#e11d48' }}>
+                  {detailsDoc.processingError}
+                </p>
+              </div>
+            )}
+
+            <div className="modal-footer" style={{ margin: '1rem -1.5rem -1.5rem -1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <Button variant="outline" onClick={() => setDetailsDoc(null)}>
                 Close
+              </Button>
+              <Button variant="primary" onClick={() => { setDetailsDoc(null); setViewerDoc(detailsDoc); }}>
+                View Document
               </Button>
             </div>
           </div>

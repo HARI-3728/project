@@ -26,6 +26,16 @@ const healthRecordSchema = new mongoose.Schema(
     doctorName: { type: String, trim: true },
     recordDate: { type: Date, default: Date.now },
     tags: [{ type: String, trim: true }],
+    // Document text extraction / OCR results
+    extractedText: { type: String, default: null },
+    processingStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending',
+    },
+    processingError: { type: String, default: null },
+    extractedAt: { type: Date, default: null },
+    ocrNote: { type: String, default: null },
     isSharedWithDoctor: { type: Boolean, default: false },
     sharedWith: [
       {

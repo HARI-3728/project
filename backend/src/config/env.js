@@ -13,7 +13,7 @@ const parseOrigin = (value, name) => {
 };
 
 const getServerConfig = (env = process.env) => {
-  const requiredVariables = ['PORT', 'FRONTEND_URL', 'BACKEND_URL', 'MONGO_URI', 'JWT_SECRET'];
+  const requiredVariables = ['PORT', 'FRONTEND_URL', 'BACKEND_URL', 'MONGODB_URI', 'JWT_SECRET'];
   for (const name of requiredVariables) {
     if (!env[name]?.trim()) {
       throw new Error(`Missing required environment variable: ${name}`);

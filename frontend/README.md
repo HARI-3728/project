@@ -9,7 +9,7 @@ Prerequisites:
 - Node.js and npm
 - A running MongoDB instance for the backend
 
-Create `backend/.env` from `backend/.env.example` if it does not already exist, then configure `MONGO_URI` and a strong `JWT_SECRET`. Create `frontend/.env` from `frontend/.env.example`. Configure `LLM_API_KEY` to enable live AI chat. Do not put backend secrets in frontend environment files.
+Create `backend/.env` from `backend/.env.example` if it does not already exist, then configure `MONGODB_URI` and a strong `JWT_SECRET`. Create `frontend/.env` from `frontend/.env.example`. Configure `LLM_API_KEY` to enable live AI chat. Do not put backend secrets in frontend environment files.
 
 From the repository root, run these commands in separate terminals:
 
