@@ -1,15 +1,34 @@
 const parseOrigin = (value, name) => {
   let url;
   try {
-    url = new URL(value);
+    url = new URL(value.trim());
   } catch {
     throw new Error(`${name} must be a valid absolute URL.`);
   }
 
-  if (!['http:', 'https:'].includes(url.protocol) || url.pathname !== '/' || url.search || url.hash) {
+  if (
+    !['http:', 'https:'].includes(url.protocol)
+    || url.pathname !== '/'
+    || url.search
+    || url.hash
+    || url.username
+    || url.password
+  ) {
     throw new Error(`${name} must contain only an http(s) origin.`);
   }
   return url;
+};
+
+const getFrontendOrigins = (value = '') => {
+  if (!value.trim()) return [];
+
+  return value.split(',').map((entry) => {
+    const origin = entry.trim();
+    if (!origin) {
+      throw new Error('FRONTEND_URL must contain one or more http(s) origins.');
+    }
+    return parseOrigin(origin, 'FRONTEND_URL').origin;
+  });
 };
 
 const getServerConfig = (env = process.env) => {
@@ -28,14 +47,7 @@ const getServerConfig = (env = process.env) => {
     throw new Error('PORT must be an integer between 1 and 65535.');
   }
 
-  const frontendOrigins = env.FRONTEND_URL.split(',').map((value) => {
-    const origin = value.trim();
-    if (!origin) {
-      throw new Error('FRONTEND_URL must contain one or more http(s) origins.');
-    }
-    return parseOrigin(origin, 'FRONTEND_URL').origin;
-  });
-
+  getFrontendOrigins(env.FRONTEND_URL);
   const backend = parseOrigin(env.BACKEND_URL, 'BACKEND_URL');
 
   return {
@@ -44,4 +56,4 @@ const getServerConfig = (env = process.env) => {
   };
 };
 
-module.exports = { getServerConfig };
+module.exports = { getServerConfig, getFrontendOrigins, parseOrigin };

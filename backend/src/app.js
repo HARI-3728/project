@@ -3,38 +3,45 @@ const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
-const path = require('path');
 const { generalLimiter } = require('./middleware/rateLimiter.middleware');
 const errorHandler = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
+const { getFrontendOrigins, parseOrigin } = require('./config/env');
 
 const app = express();
 
-// ─── Security Middleware ────────────────────────────────────────────────────
-app.use(helmet());
-app.use(mongoSanitize());
-
 // ─── CORS ───────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedOrigins = getFrontendOrigins(process.env.FRONTEND_URL);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
-      } else {
-        callback(new Error(`CORS policy: origin ${origin} not allowed`));
+        return;
       }
+
+      let normalizedOrigin;
+      try {
+        normalizedOrigin = parseOrigin(origin, 'Origin').origin;
+      } catch {
+        callback(null, false);
+        return;
+      }
+
+      callback(null, allowedOrigins.includes(normalizedOrigin));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204,
   })
 );
+
+// ─── Security Middleware ────────────────────────────────────────────────────
+app.use(helmet());
+app.use(mongoSanitize());
 
 // ─── Body Parsers ───────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));

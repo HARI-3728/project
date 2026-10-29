@@ -1,4 +1,4 @@
-const { getServerConfig } = require('../src/config/env');
+const { getFrontendOrigins, getServerConfig } = require('../src/config/env');
 
 const validEnvironment = {
   PORT: '5000',
@@ -32,5 +32,20 @@ describe('server environment configuration', () => {
       ...validEnvironment,
       FRONTEND_URL: '',
     })).toThrow('Missing required environment variable: FRONTEND_URL');
+  });
+
+  it('normalizes and validates a comma-separated frontend origin allow-list', () => {
+    expect(getFrontendOrigins(
+      ' https://project-hari-3728.vercel.app/ , https://preview.example ',
+    )).toEqual([
+      'https://project-hari-3728.vercel.app',
+      'https://preview.example',
+    ]);
+  });
+
+  it('rejects invalid entries in the frontend origin allow-list', () => {
+    expect(() => getFrontendOrigins(
+      'https://project-hari-3728.vercel.app,,https://preview.example',
+    )).toThrow('FRONTEND_URL must contain one or more http(s) origins.');
   });
 });

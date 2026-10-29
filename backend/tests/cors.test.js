@@ -1,7 +1,7 @@
 const request = require('supertest');
 
 const frontendOrigin = 'https://project-hari-3728.vercel.app';
-process.env.FRONTEND_URL = frontendOrigin;
+process.env.FRONTEND_URL = ` ${frontendOrigin}/ `;
 
 const app = require('../src/app');
 
@@ -26,6 +26,23 @@ describe('CORS policy', () => {
       .set('Origin', 'https://untrusted.example')
       .set('Access-Control-Request-Method', 'POST');
 
+    expect(response.status).toBeLessThan(500);
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('mounts login and registration at the expected versioned paths', async () => {
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', frontendOrigin)
+      .send({});
+    const registration = await request(app)
+      .post('/api/v1/auth/register')
+      .set('Origin', frontendOrigin)
+      .send({});
+
+    expect(login.status).toBe(400);
+    expect(login.headers['access-control-allow-origin']).toBe(frontendOrigin);
+    expect(registration.status).toBe(400);
+    expect(registration.headers['access-control-allow-origin']).toBe(frontendOrigin);
   });
 });
