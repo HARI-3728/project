@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Calendar,
   Users,
   CheckCircle2,
   Clock,
-  Star,
   FileText,
   Plus,
-  Building2,
-  AlertCircle,
   Phone,
   Mail,
   ShieldCheck,
   ShieldAlert,
-  UserCheck
+  UserCheck,
+  MessageSquare,
+  Building2,
 } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { StatCard, Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -24,8 +24,9 @@ import { LoadingState } from '../components/ui/LoadingState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { api } from '../lib/api';
 import './pages.css';
+import './doctor.css';
+export const DoctorDashboard = () => {
 
-export const DoctorDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -172,6 +173,19 @@ export const DoctorDashboard = () => {
   const recentPrescriptions = dashboardData?.recentPrescriptions || [];
   const isVerified = profile?.isVerified ?? false;
 
+  const doctorProfile = useMemo(() => ({
+    specialization: profile?.specialization || dashboardData?.profile?.specialization || 'General Physician',
+    experience: profile?.experience ?? dashboardData?.profile?.experience ?? 0,
+    consultationFee: profile?.consultationFee ?? dashboardData?.profile?.consultationFee ?? 500,
+    registrationNumber: profile?.registrationNumber ?? dashboardData?.profile?.registrationNumber ?? 'Pending Filing',
+    hospital: profile?.hospital ?? dashboardData?.profile?.hospital ?? null,
+  }), [profile, dashboardData?.profile]);
+
+  const nextAppointment = useMemo(() => {
+    const upcoming = todayAppointments.filter((apt) => apt.status !== 'completed');
+    return upcoming[0] || null;
+  }, [todayAppointments]);
+
   return (
     <div className="dashboard-page fade-in">
       {/* Messages */}
@@ -189,22 +203,21 @@ export const DoctorDashboard = () => {
       )}
 
       {/* Hero Banner */}
-      <div className="dashboard-hero-banner">
-        <div className="hero-content">
-          <div className="hero-tag">
+      <div className="doctor-hero">
+        <div className="doctor-hero-inner">
+          <div className="doctor-hero-tag">
             <UserCheck size={14} />
             <span>
-              {profile?.specialization || 'Physician'} • {isVerified ? 'Verified Practitioner' : 'Verification In Progress'}
+              {doctorProfile.specialization} • {isVerified ? 'Verified Practitioner' : 'Credential Verification In Progress'}
             </span>
           </div>
 
-          <h2 className="hero-title">Welcome, Dr. {user?.name || 'Practitioner'}!</h2>
-          <p className="hero-desc">
+          <h2 className="doctor-hero-title">Welcome, Dr. {user?.name || 'Practitioner'}</h2>
+          <p className="doctor-hero-desc">
             You have <strong>{todayAppointments.length} consultation{todayAppointments.length === 1 ? '' : 's'} scheduled today</strong> and <strong>{stats.pendingCount || 0} pending patient request{stats.pendingCount === 1 ? '' : 's'}</strong>.
           </p>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-            <Button
+          <div className="doctor-hero-actions">              <Button
               type="button"
               variant="primary"
               size="md"
@@ -219,17 +232,18 @@ export const DoctorDashboard = () => {
               size="md"
               icon={Building2}
               onClick={() => navigate('/medicines')}
-              style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
             >
               Browse Medicines Catalog
             </Button>
           </div>
+
+          <div className="doctor-hero-divider" aria-hidden="true" />
         </div>
       </div>
 
       {/* Verification Notice */}
       {!isVerified && (
-        <div className="auth-security-notice" style={{ marginBottom: '1.75rem' }}>
+        <div className="auth-security-notice" style={{ marginBottom: '1.5rem' }}>
           <ShieldAlert size={20} className="security-notice-icon" />
           <div>
             <strong>Credential Verification Pending:</strong> Your doctor account is active in the provider portal. Institutional verification by the hospital clinical director is underway to authorize public appointment scheduling.
@@ -238,18 +252,18 @@ export const DoctorDashboard = () => {
       )}
 
       {/* 4 Core Stat Cards */}
-      <div className="dashboard-grid">
+      <div className="doctor-stat-grid">
         <StatCard
           title="Today's Schedule"
           value={stats.todayCount ?? todayAppointments.length}
           unit="appointments"
-          badgeText="Today"
+          badgeText="Today queue"
           badgeType="info"
           trend="stable"
           trendValue="Scheduled"
           icon={Calendar}
-          iconBgColor="var(--primary-100)"
-          iconColor="var(--primary-700)"
+          iconBgColor="var(--color-primary-light)"
+          iconColor="var(--color-primary)"
         />
 
         <StatCard
@@ -282,7 +296,7 @@ export const DoctorDashboard = () => {
           title="Unique Patients"
           value={stats.uniquePatients ?? 0}
           unit="patients treated"
-          badgeText={stats.rating ? `★ ${stats.rating.toFixed(1)} (${stats.totalReviews})` : 'New Doctor'}
+          badgeText={stats.rating ? `${stats.rating.toFixed(1)} ★ (${stats.totalReviews})` : 'Building network'}
           badgeType="info"
           trend="up"
           trendValue="Clinical Network"
@@ -292,191 +306,220 @@ export const DoctorDashboard = () => {
         />
       </div>
 
-      {/* Two Column Layout: Today's Schedule & Practice Details */}
-      <div className="details-container" style={{ marginBottom: '2rem' }}>
-        {/* Left Column: Practice Profile */}
-        <Card className="details-image-card" style={{ alignItems: 'flex-start', textAlign: 'left' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.25rem', width: '100%' }}>
-            <img
-              src={user?.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80'}
-              alt={user?.name}
-              style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-full)', objectFit: 'cover' }}
-            />
-            <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Dr. {user?.name}</h3>
-              <p style={{ fontSize: '0.825rem', color: 'var(--primary-700)', fontWeight: 600 }}>
-                {profile?.specialization || 'Medical Specialist'}
-              </p>
-              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.25rem' }}>
-                <span className={`badge ${isVerified ? 'badge-success' : 'badge-warning'}`}>
-                  {isVerified ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
-                  {isVerified ? 'Verified' : 'Pending Verification'}
-                </span>
+      {/* Quick action strip */}
+      <div className="doctor-action-strip">
+        <Link to="/medicines" className="doctor-action-chip secondary">
+          <Building2 size={16} />
+          Shop Medicines Catalog
+        </Link>
+        <Link to="/prescriptions" className="doctor-action-chip secondary">
+          <FileText size={16} />
+          Patient Records
+        </Link>
+      </div>
+
+      {/* Doctor profile + stats row */}
+      <Card className="page-section" style={{ marginBottom: '0.25rem' }}>
+        <div className="doctor-two-col">
+          {/* Profile */}
+          <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div className="doctor-profile-card">
+              <img
+                className="doctor-profile-avatar"
+                src={user?.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80'}
+                alt={user?.name}
+              />
+              <div className="doctor-profile-meta">
+                <div className="doctor-profile-name">Dr. {user?.name || 'Practitioner'}</div>
+                <div className="doctor-profile-role">{doctorProfile.specialization}</div>
+                <div className="doctor-profile-badges">
+                  <span className={`badge ${isVerified ? 'badge-success' : 'badge-warning'}`}>
+                    {isVerified ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                    {isVerified ? 'Verified' : 'Pending Verification'}
+                  </span>
+                  {user?.email && (
+                    <span className="badge badge-neutral">
+                      <Mail size={12} />
+                      {user.email}
+                    </span>
+                  )}
+                </div>
               </div>
+            </div>
+
+            <div className="doctor-profile-details">
+              <div className="doctor-profile-row">
+                <span>Experience</span>
+                <strong>{doctorProfile.experience || 0} Years</strong>
+              </div>
+              <div className="doctor-profile-row">
+                <span>Consultation Fee (OPD)</span>
+                <strong>₹{doctorProfile.consultationFee || 0}</strong>
+              </div>
+              <div className="doctor-profile-row">
+                <span>Hospital / Clinic</span>
+                <strong>{doctorProfile.hospital?.hospitalName || 'Not assigned yet'}</strong>
+              </div>
+              <div className="doctor-profile-row">
+                <span>Registration Number</span>
+                <code>{doctorProfile.registrationNumber || 'Pending Filing'}</code>
+              </div>
+              {user?.phone && (
+                <div className="doctor-profile-row">
+                  <span>Contact</span>
+                  <span><Phone size={12} style={{ display: 'inline', marginRight: '0.25rem' }} />{user.phone}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--neutral-700)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Experience:</span>
-              <strong>{profile?.experience || 0} Years</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Consultation Fee:</span>
-              <strong>₹{profile?.consultationFee || 500}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Hospital:</span>
-              <strong>{profile?.hospital?.hospitalName || 'MediCare+ Apex Hospital'}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>License Number:</span>
-              <code>{profile?.registrationNumber || 'Pending Filing'}</code>
-            </div>
-            {user?.email && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                <Mail size={14} />
-                <span>{user.email}</span>
+          {/* Today's appointments */}
+          <Card style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div className="doctor-card-head">
+              <div>
+                <div className="doctor-card-title">Today's Patient Schedule</div>
+                <div className="doctor-card-sub">
+                  {todayAppointments.length} consultation{todayAppointments.length === 1 ? '' : 's'} on the calendar
+                </div>
               </div>
-            )}
-            {user?.phone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                <Phone size={14} />
-                <span>{user.phone}</span>
+              <span className="badge badge-info">{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+            </div>
+
+            {todayAppointments.length === 0 ? (
+              <div className="doctor-empty">
+                <Calendar size={36} />
+                <div className="doctor-empty-title">No consultations booked for today</div>
+                <div className="doctor-empty-sub">Future patient appointments will appear here automatically.</div>
               </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Right Column: Today's Appointments */}
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Today's Patient Schedule</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {todayAppointments.length} consultation{todayAppointments.length === 1 ? '' : 's'} on the calendar
-              </p>
-            </div>
-            <span className="badge badge-info">{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-          </div>
-
-          {todayAppointments.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-              <Calendar size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-              <p style={{ fontWeight: 600 }}>No consultations booked for today</p>
-              <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Future patient appointments will appear here automatically.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {todayAppointments.map((apt) => (
-                <div
-                  key={apt._id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.85rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--neutral-50)',
-                    flexWrap: 'wrap',
-                    gap: '0.75rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div className="reminder-time-box" style={{ fontSize: '0.85rem', padding: '0.4rem 0.65rem' }}>
-                      <Clock size={14} />
-                      <span>{apt.appointmentTime || '10:00'}</span>
+            ) : (
+              <div className="doctor-appt-list">
+                {todayAppointments.map((apt) => (
+                  <div className="doctor-appt-item" key={apt._id}>
+                    <div className="doctor-appt-left">
+                      <span className="doctor-appt-time">
+                        <Clock size={13} />
+                        {apt.appointmentTime || '10:00'}
+                      </span>
+                      <div className="doctor-appt-patient">
+                        <div className="doctor-appt-name">{apt.patient?.name || 'Patient'}</div>
+                        <div className="doctor-appt-meta">
+                          {apt.condition || 'General Consultation'}
+                          {apt.patient?.phone ? ` • ${apt.patient.phone}` : ''}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                        {apt.patient?.name || 'Patient'}
-                      </h4>
-                      <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-                        {apt.condition || 'General Consultation'} • {apt.patient?.phone || 'No phone recorded'}
-                      </p>
+                    <div className="doctor-appt-right">
+                      <span className={`badge ${apt.status === 'completed' ? 'badge-success' : apt.status === 'confirmed' ? 'badge-info' : 'badge-warning'}`}>
+                        {apt.status}
+                      </span>
+                      {apt.status !== 'completed' && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleCompleteAppointment(apt._id)}
+                        >
+                          Mark Done
+                        </Button>
+                      )}
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      </Card>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <span className={`badge ${apt.status === 'completed' ? 'badge-success' : apt.status === 'confirmed' ? 'badge-info' : 'badge-warning'}`}>
-                      {apt.status}
-                    </span>
-                    {apt.status !== 'completed' && (
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={() => handleCompleteAppointment(apt._id)}
-                      >
-                        Mark Done
-                      </Button>
-                    )}
+      {/* Recent Rx + Upcoming consultation */}
+      <div className="doctor-two-col" style={{ marginBottom: '0.75rem' }}>
+        {/* Recent prescriptions */}
+        <Card style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          <div className="doctor-card-head">
+            <div>
+              <div className="doctor-card-title">Recent Clinical Prescriptions</div>
+              <div className="doctor-card-sub">Verified medical records issued under your signature</div>
+            </div>
+            <Button size="sm" variant="outline" icon={Plus} onClick={() => setIsRxModalOpen(true)}>
+              New Prescription
+            </Button>
+          </div>
+
+          {recentPrescriptions.length === 0 ? (
+            <div className="doctor-empty">
+              <FileText size={30} />
+              <div className="doctor-empty-title">No prescriptions issued yet</div>
+              <div className="doctor-empty-sub">Prescriptions created for patients will be listed here.</div>
+            </div>
+          ) : (
+            <div className="doctor-rx-list">
+              {recentPrescriptions.map((rx) => (
+                <div className="doctor-rx-item" key={rx._id}>
+                  <div>
+                    <div className="doctor-rx-patient">{rx.patient?.name || rx.patientName || 'Registered Patient'}</div>
+                    <div className="doctor-rx-detail">
+                      Diagnosis: <strong>{rx.diagnosis || 'Standard therapy'}</strong> • {(rx.medicines || []).map(m => m.medicineName).join(', ') || 'Listed medication'}
+                    </div>
+                  </div>
+                  <div className="doctor-rx-date">
+                    {rx.createdAt ? new Date(rx.createdAt).toLocaleDateString() : 'Recent'}
                   </div>
                 </div>
               ))}
             </div>
           )}
         </Card>
-      </div>
 
-      {/* Recent Prescriptions Written */}
-      <Card style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Recent Clinical Prescriptions</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Verified medical records issued under your signature
-            </p>
+        {/* Upcoming consultation */}
+        <Card style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="doctor-card-head">
+            <div>
+              <div className="doctor-card-title">Next Upcoming Consultation</div>
+              <div className="doctor-card-sub">Your next live appointment</div>
+            </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            icon={Plus}
-            onClick={() => setIsRxModalOpen(true)}
-          >
-            New Prescription
-          </Button>
-        </div>
 
-        {recentPrescriptions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
-            <FileText size={36} style={{ margin: '0 auto 0.5rem', opacity: 0.4 }} />
-            <p style={{ fontWeight: 600 }}>No prescriptions issued yet</p>
-            <p style={{ fontSize: '0.8rem' }}>Prescriptions created for patients will be listed here.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {recentPrescriptions.map((rx) => (
-              <div
-                key={rx._id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.85rem 1rem',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'white',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                }}
-              >
-                <div>
-                  <h4 style={{ fontSize: '0.925rem', fontWeight: 700 }}>
-                    Patient: {rx.patient?.name || rx.patientName || 'Registered Patient'}
-                  </h4>
-                  <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-                    Diagnosis: <strong>{rx.diagnosis || 'Standard therapy'}</strong> • Medicines: {(rx.medicines || []).map(m => m.medicineName).join(', ') || 'Listed medication'}
-                  </p>
+          {nextAppointment ? (
+            <>
+              <div className="doctor-appt-item" style={{ background: 'var(--color-primary-light)', borderColor: 'rgba(37, 99, 235, 0.25)' }}>
+                <div className="doctor-appt-left">
+                  <span className="doctor-appt-time" style={{ background: 'white', color: 'var(--color-primary)' }}>
+                    <Calendar size={13} />
+                    {nextAppointment.appointmentTime || '10:00'}
+                  </span>
+                  <div className="doctor-appt-patient">
+                    <div className="doctor-appt-name">{nextAppointment.patient?.name || 'Patient'}</div>
+                    <div className="doctor-appt-meta">
+                      {nextAppointment.condition || 'General Consultation'}
+                      {nextAppointment.patient?.phone ? ` • ${nextAppointment.patient.phone}` : ''}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {rx.createdAt ? new Date(rx.createdAt).toLocaleDateString() : 'Recent'}
-                </div>
+                <span className="badge badge-info">
+                  {nextAppointment.status}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+
+              <div className="doctor-upcoming-strip">
+                <div>
+                  <div className="doctor-upcoming-label">Start Consultation</div>
+                  <div className="doctor-upcoming-text">
+                    {nextAppointment.patient?.name || 'Patient'} • {nextAppointment.condition || 'Consultation'}
+                  </div>
+                </div>
+                <Button className="doctor-upcoming-action" variant="primary" size="md" icon={MessageSquare}>
+                  Start Session
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="doctor-empty">
+              <Clock size={30} />
+              <div className="doctor-empty-title">No upcoming consultation</div>
+              <div className="doctor-empty-sub">Your next booked appointment will appear here.</div>
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Write Prescription Modal */}
       <Modal
@@ -598,7 +641,8 @@ export const DoctorDashboard = () => {
             Issue and Save Prescription
           </Button>
         </form>
-      </Modal>
-    </div>
+      </Modal>   </div>
   );
 };
+
+

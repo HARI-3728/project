@@ -13,8 +13,8 @@ const frontendOrigin = 'https://project-hari-3728.vercel.app';
 // env value may be missing or differ from the Vercel origin.
 process.env.FRONTEND_URL = `${frontendOrigin}/`;
 
-// Lazy-require the app so `allowedOriginsFor` is available before Jest caches
-// the module closure. This also mirrors how the server boots in production.
+// Lazy-require the app inside beforeAll so the cors middleware is evaluated once
+// per test run and the module state stays consistent across tests in this file.
 let app;
 beforeAll(() => {
   app = require('../src/app');

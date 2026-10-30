@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Building2,
   Package,
@@ -10,12 +10,27 @@ import {
   Plus,
   TrendingUp,
   AlertCircle,
-  Truck,
   DollarSign,
   Phone,
   Mail,
   MapPin,
-  Pill
+  Pill,
+  Users,
+  LayoutGrid,
+  Menu,
+  FileText,
+  Loader2,
+  Stethoscope,
+  ShieldCheck,
+  Receipt,
+  Search,
+  Eye,
+  Syringe,
+  ShieldAlert,
+  Truck,
+  Heart,
+  FileCheck,
+  Beaker,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { StatCard, Card } from '../components/ui/Card';
@@ -25,6 +40,7 @@ import { LoadingState } from '../components/ui/LoadingState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { api } from '../lib/api';
 import './pages.css';
+import './hospital.css';
 
 export const HospitalDashboard = () => {
   const { user } = useAuth();
@@ -160,9 +176,8 @@ export const HospitalDashboard = () => {
   const lowStockMeds = dashboardData?.lowStockMeds || [];
   const hospital = profile || dashboardData?.hospital || {};
 
-  return (
-    <div className="dashboard-page fade-in">
-      {/* Alert Notices */}
+  return (      <div className="dashboard-page hospital-page fade-in">
+      {/* Messages */}
       {successMessage && (
         <div className="upload-alert success" role="status">
           <CheckCircle2 size={18} />
@@ -176,22 +191,22 @@ export const HospitalDashboard = () => {
         </div>
       )}
 
-      {/* Hero Banner */}
-      <div className="dashboard-hero-banner">
-        <div className="hero-content">
-          <div className="hero-tag">
+      {/* Facility Hero */}
+      <div className="hospital-hero">
+        <div className="hospital-hero-inner">
+          <div className="hospital-hero-tag">
             <Building2 size={14} />
             <span>
               {hospital?.hospitalName || 'MediCare+ Healthcare Network'} • Lic: {hospital?.registrationNumber || 'HOSP-2024'}
             </span>
           </div>
 
-          <h2 className="hero-title">{hospital?.hospitalName || user?.name || 'Healthcare Facility'}</h2>
-          <p className="hero-desc">
+          <h2 className="hospital-hero-title">{hospital?.hospitalName || user?.name || 'Healthcare Facility'}</h2>
+          <p className="hospital-hero-desc">
             Facility overview: <strong>{stats.pendingOrders || 0} active pharmacy orders</strong> requiring preparation and <strong>₹{(stats.totalRevenue || 0).toLocaleString()}</strong> in verified collections.
           </p>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+          <div className="hospital-hero-actions">
             <Button
               type="button"
               variant="primary"
@@ -207,7 +222,6 @@ export const HospitalDashboard = () => {
               size="md"
               icon={Pill}
               onClick={() => navigate('/medicines')}
-              style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}
             >
               Manage Medicine Stock
             </Button>
@@ -216,7 +230,7 @@ export const HospitalDashboard = () => {
       </div>
 
       {/* 4 Core Stat Cards */}
-      <div className="dashboard-grid">
+      <div className="hospital-stat-grid">
         <StatCard
           title="Pending Orders"
           value={stats.pendingOrders ?? 0}
@@ -270,67 +284,72 @@ export const HospitalDashboard = () => {
         />
       </div>
 
-      {/* Two Column Section: Recent Orders & Facility Details */}
-      <div className="details-container" style={{ marginBottom: '2rem' }}>
-        {/* Left Column: Facility Information Card */}
-        <Card className="details-image-card" style={{ alignItems: 'flex-start', textAlign: 'left' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.25rem', width: '100%' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: 'var(--radius-lg)',
-              backgroundColor: 'var(--primary-100)',
-              color: 'var(--primary-700)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Building2 size={32} />
-            </div>
+      {/* Facility profile + recent orders */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1rem', marginBottom: '0.5rem' }}>
+        {/* Facility information card */}
+        <Card className="hospital-card">
+          <div className="hospital-card-head">
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>{hospital?.hospitalName || 'MediCare+ Apex Hospital'}</h3>
-              <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)' }}>
-                {hospital?.type ? hospital.type.toUpperCase() : 'PRIVATE'} HEALTHCARE FACILITY
-              </p>
+              <div className="hospital-card-title">Facility Overview</div>
+              <div className="hospital-card-sub">Operating profile and registration summary</div>
             </div>
+            <span className="badge badge-info">
+              {hospital?.type ? hospital.type.toUpperCase() : 'PRIVATE'}
+            </span>
           </div>
 
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--neutral-700)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Reg / License:</span>
-              <strong>{hospital?.registrationNumber || 'HOSP-2024-ND-0881'}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Operating Hours:</span>
-              <strong>{hospital?.operatingHours?.open || '00:00'} – {hospital?.operatingHours?.close || '23:59'} (24/7)</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>GST / Tax Rate:</span>
-              <strong>{hospital?.taxRate || 18}%</strong>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-              <MapPin size={16} />
-              <span>{hospital?.address?.street || '42 Health Boulevard'}, {hospital?.address?.city || 'New Delhi'}</span>
-            </div>
-            {hospital?.phone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                <Phone size={16} />
-                <span>{hospital.phone}</span>
+          <div className="hospital-profile-card">
+              <div className="hospital-profile-icon">
+                <Building2 size={26} />
               </div>
-            )}
-            {hospital?.email && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                <Mail size={16} />
-                <span>{hospital.email}</span>
+              <div className="hospital-profile-meta">
+                <div className="hospital-profile-name">{hospital?.hospitalName || 'MediCare+ Apex Hospital'}</div>
+                <div className="hospital-profile-role">
+                  {(hospital?.type || 'PRIVATE').toUpperCase()} HEALTHCARE FACILITY
+                </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Departments Chips */}
-          <div style={{ marginTop: '1.25rem', width: '100%' }}>
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--neutral-800)' }}>Departments</h4>
-            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <div className="hospital-profile-details">
+              <div className="hospital-profile-row">
+                <span>Registration / License</span>
+                <strong>{hospital?.registrationNumber || 'HOSP-2024-ND-0881'}</strong>
+              </div>
+              <div className="hospital-profile-row">
+                <span>Operating Hours</span>
+                <strong>{hospital?.operatingHours?.open || '00:00'} – {hospital?.operatingHours?.close || '23:59'}</strong>
+              </div>
+              <div className="hospital-profile-row">
+                <span>GST / Tax Rate</span>
+                <strong>{hospital?.taxRate || 18}%</strong>
+              </div>
+              <div className="hospital-profile-row">
+                <span>Location</span>
+                <strong>{hospital?.address?.city || 'New Delhi'}</strong>
+              </div>
+              {hospital?.address?.street && (
+                <div className="hospital-profile-row">
+                  <span>Address</span>
+                  <span>{hospital.address.street}</span>
+                </div>
+              )}
+              {hospital?.phone && (
+                <div className="hospital-profile-row">
+                  <span>Contact</span>
+                  <span className="hospital-contact"><Phone size={12} />{hospital.phone}</span>
+                </div>
+              )}
+              {hospital?.email && (
+                <div className="hospital-profile-row">
+                  <span>Email</span>
+                  <span className="hospital-contact"><Mail size={12} />{hospital.email}</span>
+                </div>
+              )}
+            </div>
+
+          <div className="hospital-departments">
+            <div className="hospital-departments-label">Departments</div>
+            <div className="hospital-departments-list">
               {(hospital?.departments || ['General Medicine', 'Cardiology', 'Dermatology', '24/7 Pharmacy', 'Pathology']).map((dept) => (
                 <span key={dept} className="badge badge-neutral" style={{ fontSize: '0.725rem' }}>
                   {dept}
@@ -340,55 +359,42 @@ export const HospitalDashboard = () => {
           </div>
         </Card>
 
-        {/* Right Column: Recent Pharmacy Orders */}
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        {/* Recent orders */}
+        <Card className="hospital-card">
+          <div className="hospital-card-head">
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Pharmacy Orders</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Patient medication requests requiring dispatch
-              </p>
+              <div className="hospital-card-title">Pharmacy Orders — Live Queue</div>
+              <div className="hospital-card-sub">Patient medication requests requiring dispatch</div>
             </div>
             <span className="badge badge-info">{recentOrders.length} Recent</span>
           </div>
 
           {recentOrders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-              <Package size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-              <p style={{ fontWeight: 600 }}>No pharmacy orders in queue</p>
-              <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>When patients place medicine orders, they will show up here.</p>
+            <div className="hospital-empty">
+              <Package size={36} />
+              <div className="hospital-empty-title">No pharmacy orders in queue</div>
+              <div className="hospital-empty-sub">When patients place medicine orders, they will show up here.</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div className="hospital-order-list">
               {recentOrders.map((order) => (
-                <div
-                  key={order._id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.85rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--neutral-50)',
-                    flexWrap: 'wrap',
-                    gap: '0.75rem',
-                  }}
-                >
-                  <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                      Order #{order._id.slice(-6).toUpperCase()} • {order.patient?.name || 'Customer'}
-                    </h4>
-                    <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-                      {(order.items || []).length} item{(order.items || []).length === 1 ? '' : 's'} • Total: <strong>₹{order.totalAmount || 0}</strong> • {order.patient?.phone || 'No phone'}
-                    </p>
+                <div className="hospital-order-item" key={order._id}>
+                  <div className="hospital-order-left">
+                    <span className="hospital-order-id">
+                      #{order._id?.slice?.( -6)?.toUpperCase?.() || String(order._id || '').slice(-6).toUpperCase()}
+                    </span>
+                    <div className="hospital-order-patient">
+                      <div className="hospital-order-name">{order.patient?.name || 'Customer'}</div>
+                      <div className="hospital-order-meta">
+                        {(order.items || []).length} item{(order.items || []).length === 1 ? '' : 's'} • ₹{order.totalAmount || 0}
+                        {order.patient?.phone ? ` • ${order.patient.phone}` : ''}
+                      </div>
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div className="hospital-order-right">
                     <span className={`badge ${order.status === 'delivered' ? 'badge-success' : order.status === 'cancelled' ? 'badge-danger' : 'badge-warning'}`}>
                       {order.status}
                     </span>
-
                     {order.status !== 'delivered' && order.status !== 'cancelled' && (
                       <select
                         className="form-input"
@@ -409,43 +415,40 @@ export const HospitalDashboard = () => {
             </div>
           )}
         </Card>
-      </div>
-
-      {/* Low Stock Medicine Alerts */}
+      </div>      {/* Low stock alert banner */}
       {lowStockMeds.length > 0 && (
-        <Card style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertTriangle size={20} style={{ color: 'var(--accent-amber)' }} />
-              <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Low Stock Inventory Alerts</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Medicines currently below the 20-unit safety threshold</p>
-              </div>
+        <div className="hospital-alert-banner" style={{ marginBottom: '0.5rem' }}>
+          <div className="hospital-alert-content">
+            <AlertTriangle size={20} style={{ color: '#b45309' }} />
+            <div>
+              <div className="hospital-alert-title">Low Stock Inventory Alerts</div>
+              <div className="hospital-alert-sub">Medicines currently below the 20-unit safety threshold</div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => navigate('/medicines')}>
-              View Full Catalog
-            </Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => navigate('/medicines')} className="hospital-alert-action">
+            View Full Catalog
+          </Button>
+        </div>
+      )}
+
+      {/* Low stock inventory cards */}
+      {lowStockMeds.length > 0 && (
+        <Card className="page-section" style={{ marginBottom: '0.5rem' }}>
+          <div className="hospital-card-head">
+            <div>
+              <div className="hospital-card-title">Medicines Below Safety Threshold</div>
+              <div className="hospital-card-sub">Items requiring replenishment before the next order batch</div>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.85rem' }}>
+          <div className="hospital-lowstock-grid">
             {lowStockMeds.map((med) => (
-              <div
-                key={med._id || med.name}
-                style={{
-                  padding: '0.85rem 1rem',
-                  border: '1px solid rgba(217, 119, 6, 0.3)',
-                  backgroundColor: 'var(--accent-amber-light)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+              <div className="hospital-lowstock-item" key={med._id || med.name}>
                 <div>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#92400e' }}>{med.name}</h4>
-                  <p style={{ fontSize: '0.775rem', color: '#92400e' }}>Unit Price: ₹{med.unitPrice}</p>
+                  <div className="hospital-lowstock-name">{med.name}</div>
+                  <div className="hospital-lowstock-price">Unit Price: ₹{med.unitPrice}</div>
                 </div>
-                <span className="badge badge-danger">
+                <span className="hospital-lowstock-badge badge badge-danger">
                   {med.stockQuantity} left
                 </span>
               </div>

@@ -101,31 +101,11 @@ const configureCors = () => {
 };
 
 /**
- * Diagnose the combined allowlist that the middleware would build for a given
- * FRONTEND_URL value. Exposed only for tests / on-call diagnostics; the
- * middleware itself does not depend on callers importing this.
+ * Build the allowlist that would be used for the given FRONTEND_URL value.
+ * Exposed only for tests / diagnostics; the middleware itself does not depend
+ * on callers importing this.
  */
-const describeAllowlist = (frontendUrlValue) => {
-  const envOrigins = getFrontendOrigins(frontendUrlValue);
-  const combined = [
-    'https://project-dvcn656q9-hari-3728.vercel.app',
-    'https://project-hari-3728.vercel.app',
-    'http://localhost:5173',
-    ...envOrigins,
-  ].filter((origin, index, self) => self.indexOf(origin) === index);
-
-  return {
-    envOrigins,
-    hardcoded: [
-      'https://project-dvcn656q9-hari-3728.vercel.app',
-      'https://project-hari-3728.vercel.app',
-      'http://localhost:5173',
-    ],
-    combined,
-  };
-};
-
-const _allowedOriginsFor = (frontendUrlValue) => {
+const allowedOriginsFor = (frontendUrlValue) => {
   const envOrigins = getFrontendOrigins(frontendUrlValue);
   const combined = [
     'https://project-dvcn656q9-hari-3728.vercel.app',
@@ -139,5 +119,12 @@ const _allowedOriginsFor = (frontendUrlValue) => {
 
 module.exports = {
   configureCors,
-  allowedOriginsFor: _allowedOriginsFor,
+  allowedOriginsFor,
 };
+
+/**
+ * Build the allowlist that would be used for the given FRONTEND_URL value.
+ * Exposed only for tests / diagnostics; the middleware itself does not depend
+ * on callers importing this.
+ */
+module.exports.allowedOriginsFor = allowedOriginsFor;

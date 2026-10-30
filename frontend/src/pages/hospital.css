@@ -1,0 +1,464 @@
+/* Hospital dashboard-specific styles.
+   Separate from pages.css so the patient portal and shared catalog pages
+   are not affected. */
+
+.hospital-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.hospital-page > * {
+  min-width: 0;
+}
+
+.hospital-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+  color: white;
+  border-radius: var(--radius-hero);
+  padding: 1.6rem 1.75rem;
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.hospital-hero::after {
+  content: '';
+  position: absolute;
+  right: -50px;
+  top: -50px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+
+.hospital-hero-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.hospital-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.74rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.hospital-hero-title {
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.hospital-hero-desc {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+}
+
+.hospital-hero-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.hospital-hero-actions .btn-primary {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.hospital-hero-actions .btn-primary:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.hospital-hero-actions .btn-outline {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+}
+
+.hospital-hero-actions .btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.hospital-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-card);
+  background: var(--neutral-50);
+  border: 1px solid var(--color-border);
+}
+
+.hospital-profile-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-card);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hospital-profile-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.hospital-profile-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.hospital-profile-role {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hospital-profile-badges {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.hospital-profile-details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.hospital-profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--color-border);
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.hospital-profile-row:last-child {
+  border-bottom: 0;
+}
+
+.hospital-profile-row strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.hospital-profile-row .hospital-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.hospital-departments {
+  margin-top: 0.85rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.hospital-departments-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.hospital-departments-list {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.hospital-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .hospital-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .hospital-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hospital-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.hospital-section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+  font-family: var(--font-primary);
+}
+
+.hospital-section-sub {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin-top: 0.1rem;
+}
+
+.hospital-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hospital-card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  font-family: var(--font-primary);
+}
+
+.hospital-card-sub {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+  margin-top: 0.1rem;
+}
+
+.hospital-card {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.hospital-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hospital-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--neutral-50);
+  flex-wrap: wrap;
+}
+
+.hospital-order-left {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.hospital-order-id {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.hospital-order-patient {
+  min-width: 0;
+}
+
+.hospital-order-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hospital-order-meta {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  margin-top: 0.05rem;
+}
+
+.hospital-order-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.hospital-lowstock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.hospital-lowstock-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: var(--accent-amber-light);
+  border-radius: var(--radius-card);
+}
+
+.hospital-lowstock-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.hospital-lowstock-price {
+  font-size: 0.72rem;
+  color: #92400e;
+  margin-top: 0.05rem;
+}
+
+.hospital-lowstock-badge {
+  flex-shrink: 0;
+}
+
+.hospital-empty {
+  text-align: center;
+  padding: 1.6rem 1rem;
+  color: var(--color-muted);
+}
+
+.hospital-empty svg {
+  margin: 0 auto 0.5rem;
+  opacity: 0.4;
+}
+
+.hospital-empty-title {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.hospital-empty-sub {
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.hospital-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: var(--accent-amber-light);
+  border-radius: var(--radius-card);
+  flex-wrap: wrap;
+}
+
+.hospital-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hospital-alert-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.hospital-alert-sub {
+  font-size: 0.74rem;
+  color: #92400e;
+  margin-top: 0.05rem;
+}
+
+.hospital-alert-action {
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hospital-hero {
+    padding: 1.2rem 1rem;
+  }
+
+  .hospital-hero-actions {
+    margin-top: 0.5rem;
+  }
+
+  .hospital-hero-actions .btn-md {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .hospital-profile-details {
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .hospital-hero-title {
+    font-size: 1.15rem;
+  }
+
+  .hospital-hero-desc {
+    font-size: 0.82rem;
+  }
+
+  .hospital-alert-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hospital-alert-action {
+    width: 100%;
+  }
+
+  .hospital-order-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hospital-order-right {
+    align-self: flex-end;
+  }
+}
