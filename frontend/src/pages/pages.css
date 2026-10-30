@@ -1430,11 +1430,6 @@
   text-decoration: none;
 }
 
-/* ═══ Modal Styles ═══ */
-.nearby-modal-content {
-  /* Custom styles for nearby healthcare modal */
-}
-
 .nearby-booking-success {
   text-align: center;
   padding: 2rem 1rem;
@@ -1784,20 +1779,63 @@
   }
 }
 
-/* Ensure modal fits on screen */
-.modal-container {
-  max-height: calc(100vh - 4rem);
-  overflow-y: auto;
+/* Dashboard hero banner responsive stacking */
+@media (max-width: 768px) {
+  .dashboard-hero-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1.5rem !important;
+  }
+  .dashboard-hero-banner .hero-content {
+    max-width: 100% !important;
+  }
+  .dashboard-hero-search {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }
 
 @media (max-width: 480px) {
-  .modal-container {
-    max-height: calc(100vh - 3rem);
-    margin: 0.5rem !important;
-    width: calc(100% - 1rem) !important;
-    max-width: 100% !important;
+  .dashboard-hero-banner {
+    padding: 1.25rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .hero-title {
+    font-size: 1.4rem !important;
+  }
+  .hero-desc {
+    font-size: 0.85rem !important;
+  }
+  .dashboard-grid {
+    gap: 0.75rem !important;
+  }
+  .btn-md {
+    min-height: 44px !important;
+    min-width: 44px !important;
   }
 }
+
+@media (max-width: 360px) {
+  .dashboard-hero-banner {
+    padding: 1rem !important;
+  }
+  .hero-title {
+    font-size: 1.2rem !important;
+  }
+  .auth-role-tabs {
+    gap: 0.15rem !important;
+    padding: 0.2rem !important;
+  }
+  .auth-role-tab {
+    padding: 0.4rem 0.2rem !important;
+    font-size: 0.7rem !important;
+  }
+  .auth-role-tab .role-tab-label {
+    display: none !important;
+  }
+}
+
+
 
 /* MediCare AI Page */
 .ai-page-container {

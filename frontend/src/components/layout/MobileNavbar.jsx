@@ -28,16 +28,14 @@ export const MobileNavbar = () => {
       return [
         { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
         { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
-        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin },
-        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin }
       ];
     }
     if (user?.role === 'hospital') {
       return [
         { label: 'Hospital Ops', path: '/hospital', icon: LayoutDashboard },
         { label: 'Pharmacy & Stock', path: '/medicines', icon: Pill },
-        { label: 'Healthcare Network', path: '/nearby', icon: MapPin },
-        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+        { label: 'Healthcare Network', path: '/nearby', icon: MapPin }
       ];
     }
     return [
@@ -57,16 +55,14 @@ export const MobileNavbar = () => {
       return [
         { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
         { label: 'Meds & Rx', path: '/medicines', icon: Pill },
-        { label: 'Network', path: '/nearby', icon: MapPin },
-        { label: 'AI', path: '/ai-assistant', icon: Bot }
+        { label: 'Network', path: '/nearby', icon: MapPin }
       ];
     }
     if (user?.role === 'hospital') {
       return [
         { label: 'Hospital', path: '/hospital', icon: LayoutDashboard },
         { label: 'Pharmacy', path: '/medicines', icon: Pill },
-        { label: 'Facilities', path: '/nearby', icon: MapPin },
-        { label: 'AI', path: '/ai-assistant', icon: Bot }
+        { label: 'Facilities', path: '/nearby', icon: MapPin }
       ];
     }
     return [
