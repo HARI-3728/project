@@ -117,15 +117,17 @@ export const TopNavbar = () => {
       </form>
 
       <div className="navbar-right">
-        {/* MediCare AI Quick Chip */}
-        <button
-          className="ai-quick-btn"
-          onClick={() => navigate('/ai-assistant')}
-          title="Ask MediCare AI"
-        >
-          <Sparkles size={16} />
-          <span>Ask AI</span>
-        </button>
+        {/* MediCare AI Quick Chip - PATIENT ONLY */}
+        {user?.role === 'patient' && (
+          <button
+            className="ai-quick-btn"
+            onClick={() => navigate('/ai-assistant')}
+            title="Ask MediCare AI"
+          >
+            <Sparkles size={16} />
+            <span>Ask AI</span>
+          </button>
+        )}
 
         {/* Emergency SOS Shortcut */}
         <a href="tel:112" className="emergency-btn" title="Call Emergency Services (112)">

@@ -197,18 +197,23 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  /* Prevent background scroll when modal is open */
+  overflow-y: hidden;
 }
 
 .modal-container {
   background-color: var(--surface-card);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-height: 90vh;
+  max-width: 600px;
+  max-height: calc(100vh - 3rem);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--border-subtle);
   overflow: hidden;
+  /* Ensure modal never exceeds viewport */
+  margin: auto;
 }
 
 .modal-header {
@@ -217,17 +222,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-title {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--neutral-900);
+  margin: 0;
 }
 
 .modal-subtitle {
   font-size: 0.85rem;
   color: var(--text-muted);
+  margin: 0.25rem 0 0 0;
 }
 
 .modal-close-btn {
@@ -239,6 +247,7 @@
   justify-content: center;
   color: var(--neutral-500);
   transition: background-color var(--transition-fast);
+  flex-shrink: 0;
 }
 .modal-close-btn:hover {
   background-color: var(--neutral-100);
@@ -249,6 +258,8 @@
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  /* Scrollable content area */
 }
 
 .modal-footer {
@@ -259,6 +270,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* Loading, Empty, Error States */

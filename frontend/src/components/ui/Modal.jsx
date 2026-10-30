@@ -9,7 +9,7 @@ export const Modal = ({
   subtitle,
   children,
   footer,
-  maxWidth = '550px'
+  maxWidth = '600px'
 }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -17,10 +17,12 @@ export const Modal = ({
     };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '0';
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
@@ -31,7 +33,7 @@ export const Modal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div
         className="modal-container fade-in"
-        style={{ maxWidth }}
+        style={{ maxWidth: maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">

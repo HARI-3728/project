@@ -22,22 +22,22 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const navigate = useNavigate();
 
   const getNavItems = () => {
+    // MediCare AI is PATIENT ONLY - not available to doctors or hospitals
     if (user?.role === 'doctor') {
       return [
         { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
         { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
-        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin },
-        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin }
       ];
     }
     if (user?.role === 'hospital') {
       return [
         { label: 'Hospital Ops', path: '/hospital', icon: LayoutDashboard },
         { label: 'Pharmacy & Stock', path: '/medicines', icon: Pill },
-        { label: 'Healthcare Network', path: '/nearby', icon: MapPin },
-        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+        { label: 'Healthcare Network', path: '/nearby', icon: MapPin }
       ];
     }
+    // Patient get full access including MediCare AI
     return [
       { label: 'Dashboard', path: '/', icon: LayoutDashboard },
       { label: 'Medicines', path: '/medicines', icon: Pill },

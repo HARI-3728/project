@@ -1431,6 +1431,10 @@
 }
 
 /* ═══ Modal Styles ═══ */
+.nearby-modal-content {
+  /* Custom styles for nearby healthcare modal */
+}
+
 .nearby-booking-success {
   text-align: center;
   padding: 2rem 1rem;

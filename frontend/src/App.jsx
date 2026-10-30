@@ -89,7 +89,8 @@ export default function App() {
             {/* Shared Catalog & AI Routes */}
             <Route path="medicines" element={<Medicines />} />
             <Route path="medicines/:id" element={<MedicineDetails />} />
-            <Route path="ai-assistant" element={<MedicareAI />} />
+            {/* MediCare AI is PATIENT ONLY */}
+            <Route path="ai-assistant" element={<ProtectedRoute allowedRoles={['patient']}><MedicareAI /></ProtectedRoute>} />
 
             {/* Patient-Only Services */}
             <Route path="prescriptions" element={<ProtectedRoute allowedRoles={['patient']}><Prescriptions /></ProtectedRoute>} />

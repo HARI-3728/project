@@ -2,16 +2,28 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './pages.css';
 
 const createMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
 export const MedicareAI = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const messagesEndRef = useRef(null);
+  
+  // Redirect non-patients away from AI chat
+  useEffect(() => {
+    if (user && user.role !== 'patient') {
+      const targetPath = user.role === 'doctor' ? '/doctor' : user.role === 'hospital' ? '/hospital' : '/';
+      navigate(targetPath, { replace: true });
+    }
+  }, [user, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -22,6 +34,12 @@ export const MedicareAI = () => {
   }, [messages, isTyping]);
 
   const handleSendMessage = async (textToSend) => {
+    // Double-check: only patients can use MediCare AI
+    if (user?.role !== 'patient') {
+      setErrorMessage('MediCare AI is only available to patients.');
+      return;
+    }
+
     const text = (textToSend || inputValue).trim();
     if (!text || isTyping) return;
 
