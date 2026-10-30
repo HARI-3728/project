@@ -95,6 +95,7 @@ const getPatientDashboard = async (req, res, next) => {
       recentOrders,
       recentHealthRecords,
       appointmentStats,
+      upcomingAppointmentCount,
     ] = await Promise.all([
       PatientProfile.findOne({ user: patientId }),
       Appointment.find({
@@ -135,11 +136,19 @@ const getPatientDashboard = async (req, res, next) => {
         { $match: { patient: patientId } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
+      Appointment.countDocuments({
+        patient: patientId,
+        appointmentDate: { $gte: now },
+        status: { $in: ['confirmed', 'pending'] },
+      }),
     ]);
 
     const stats = {
       totalAppointments: 0,
-      upcoming: upcomingAppointments.length,
+      upcoming: upcomingAppointmentCount,
+      completedAppointments: 0,
+      pendingAppointments: 0,
+      cancelledAppointments: 0,
       activeReminders: activeReminders.length,
       activePrescriptions: activePrescriptions.length,
       recentOrdersCount: recentOrders.length,
@@ -147,6 +156,9 @@ const getPatientDashboard = async (req, res, next) => {
 
     appointmentStats.forEach((s) => {
       stats.totalAppointments += s.count;
+      if (s._id === 'completed') stats.completedAppointments = s.count;
+      if (s._id === 'pending') stats.pendingAppointments = s.count;
+      if (s._id === 'cancelled') stats.cancelledAppointments = s.count;
     });
 
     return sendSuccess(res, 200, 'Patient dashboard data', {

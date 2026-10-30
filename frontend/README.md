@@ -45,3 +45,39 @@ Run backend tests from `backend/`:
 ```powershell
 npm test
 ```
+
+## Isolated demo data
+
+The demo seeder only writes to a database named `medicare_demo`; it never reads
+`MONGODB_URI` as a fallback and does not update existing profiles. Use a local
+MongoDB instance (or a dedicated non-production MongoDB database), then seed it
+from `backend/`:
+
+```powershell
+$env:DEMO_MODE = 'true'
+$env:DEMO_MONGODB_URI = 'mongodb://127.0.0.1:27017/medicare_demo'
+npm run seed:demo
+```
+
+Point the backend's `MONGODB_URI` at that same isolated database before starting
+the API. Do not point either variable at production. The seed includes 10
+fictional patients, 7 fictional doctors, 3 fictional hospitals, linked
+appointments and prescriptions, health-record summaries (no uploaded files),
+reminders, notifications, orders, diagnostic bookings, diet plans, and the
+existing exact 10-product medicine catalogue. Re-running the command is
+idempotent. Data is explicitly labeled demo/example data where the existing
+schema and UI support it.
+
+Demo account password: `DemoPass123!`. Patient emails are
+`patient01@medicare-demo.example.test` through
+`patient10@medicare-demo.example.test`; doctor emails are
+`doctor.arun@medicare-demo.example.test`,
+`doctor.priya@medicare-demo.example.test`,
+`doctor.rajesh@medicare-demo.example.test`,
+`doctor.ananya@medicare-demo.example.test`,
+`doctor.vikram@medicare-demo.example.test`,
+`doctor.meera@medicare-demo.example.test`, and
+`doctor.kavya@medicare-demo.example.test`. Hospital emails are
+`hospital.central@medicare-demo.example.test`,
+`hospital.north@medicare-demo.example.test`, and
+`hospital.south@medicare-demo.example.test`.

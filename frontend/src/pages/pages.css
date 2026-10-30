@@ -1222,6 +1222,17 @@
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.nearby-placeholder-image {
+  display: grid;
+  place-items: center;
+  color: var(--primary-700);
+  background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+}
+
+.nearby-card-img-wrapper .nearby-placeholder-image {
+  height: 100%;
+}
+
 .nearby-facility-card:hover .nearby-card-img-wrapper img {
   transform: scale(1.06);
 }

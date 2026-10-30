@@ -22,6 +22,8 @@ import { Reminders } from './pages/Reminders';
 import { Vaccinations } from './pages/Vaccinations';
 import { NearbyHealthcare } from './pages/NearbyHealthcare';
 import { MedicareAI } from './pages/MedicareAI';
+import { PatientOrders } from './pages/PatientOrders';
+import { DietWellness } from './pages/DietWellness';
 
 const getDashboardPath = (role) => {
   if (role === 'doctor') return '/doctor';
@@ -108,6 +110,8 @@ export default function App() {
             <Route path="reminders" element={<ProtectedRoute allowedRoles={['patient']}><Reminders /></ProtectedRoute>} />
             <Route path="vaccinations" element={<ProtectedRoute allowedRoles={['patient']}><Vaccinations /></ProtectedRoute>} />
             <Route path="nearby" element={<ProtectedRoute allowedRoles={['patient']}><NearbyHealthcare /></ProtectedRoute>} />
+            <Route path="orders" element={<ProtectedRoute allowedRoles={['patient']}><PatientOrders /></ProtectedRoute>} />
+            <Route path="diet" element={<ProtectedRoute allowedRoles={['patient']}><DietWellness /></ProtectedRoute>} />
           </Route>
 
           <Route path="*" element={<RoleFallbackRedirect />} />

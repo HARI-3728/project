@@ -1,4 +1,6 @@
 const Hospital = require('../models/Hospital');
+const DoctorProfile = require('../models/DoctorProfile');
+const Appointment = require('../models/Appointment');
 const Order = require('../models/Order');
 const Bill = require('../models/Bill');
 const Medicine = require('../models/Medicine');
@@ -78,6 +80,11 @@ const getHospitalDashboard = async (req, res, next) => {
   try {
     const hospital = await Hospital.findOne({ user: req.user._id });
     const hospitalId = hospital ? hospital._id : null;
+    const hospitalFilter = hospitalId ? { hospital: hospitalId } : { _id: null };
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
     const [
       pendingOrders,
@@ -87,21 +94,33 @@ const getHospitalDashboard = async (req, res, next) => {
       allBillsCount,
       diagnosticBookingsCount,
       lowStockMeds,
+      doctorCount,
+      appointmentCount,
+      todayAppointmentCount,
+      pendingAppointmentCount,
+      completedAppointmentCount,
+      hospitalPatients,
     ] = await Promise.all([
-      Order.countDocuments({ status: { $in: ['pending', 'confirmed', 'preparing'] } }),
-      Order.countDocuments({}),
-      Order.find({})
+      Order.countDocuments({ ...hospitalFilter, status: { $in: ['pending', 'confirmed', 'preparing'] } }),
+      Order.countDocuments(hospitalFilter),
+      Order.find(hospitalFilter)
         .populate('patient', 'name phone email')
         .sort({ createdAt: -1 })
         .limit(5)
         .lean(),
       Bill.aggregate([
-        { $match: { paymentStatus: 'paid' } },
+        { $match: { ...hospitalFilter, paymentStatus: 'paid' } },
         { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
       ]),
-      Bill.countDocuments({}),
+      Bill.countDocuments(hospitalFilter),
       hospitalId ? DiagnosticBooking.countDocuments({ hospital: hospitalId }) : 0,
       Medicine.find({ stockQuantity: { $lt: 20 } }).select('name stockQuantity unitPrice').lean(),
+      hospitalId ? DoctorProfile.countDocuments({ hospital: hospitalId }) : 0,
+      Appointment.countDocuments(hospitalFilter),
+      Appointment.countDocuments({ ...hospitalFilter, appointmentDate: { $gte: todayStart, $lt: tomorrowStart } }),
+      Appointment.countDocuments({ ...hospitalFilter, status: { $in: ['pending', 'confirmed'] } }),
+      Appointment.countDocuments({ ...hospitalFilter, status: 'completed' }),
+      Appointment.distinct('patient', hospitalFilter),
     ]);
 
     const totalRevenue = paidBills.length > 0 ? paidBills[0].totalRevenue : 0;
@@ -115,6 +134,13 @@ const getHospitalDashboard = async (req, res, next) => {
       totalRevenue,
       diagnosticBookingsCount,
       lowStockCount: lowStockMeds.length,
+      doctorCount,
+      patientCount: hospitalPatients.length,
+      appointmentCount,
+      todayAppointmentCount,
+      pendingAppointmentCount,
+      completedAppointmentCount,
+      departmentCount: hospital?.departments?.length || 0,
     };
 
     return sendSuccess(res, 200, 'Hospital dashboard statistics', {

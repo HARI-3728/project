@@ -9,14 +9,12 @@ import {
   X,
   RefreshCw,
   FileText,
-  Stethoscope,
   Bot,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { EmptyState } from '../components/ui/EmptyState';
-import { ErrorState } from '../components/ui/ErrorState';
 import { LoadingState } from '../components/ui/LoadingState';
 import { DocumentViewer } from '../components/ui/DocumentViewer';
 import { DocumentAIChat } from '../components/ui/DocumentAIChat';
@@ -46,24 +44,13 @@ const mapHealthRecord = (record) => ({
   facility: record.hospitalName || 'Facility not listed',
   doctor: record.doctorName || 'Doctor not listed',
   summary: record.description || 'No notes provided.',
+  isDemo: Array.isArray(record.tags) && record.tags.includes('DEMO DATA'),
   status: record.fileUrl ? 'File attached' : 'Saved',
   processingStatus: record.processingStatus || 'pending',
   extractedText: record.extractedText || null,
   processingError: record.processingError || null,
   ocrNote: record.ocrNote || null,
 });
-
-const STATUS_BADGE = {
-  completed: 'badge-success',
-  pending: 'badge-neutral',
-  failed: 'badge-danger',
-};
-
-const STATUS_LABEL = {
-  completed: 'Processed',
-  pending: 'Processing',
-  failed: 'Failed',
-};
 
 export const HealthRecords = () => {
   const [records, setRecords] = useState([]);
@@ -352,26 +339,38 @@ export const HealthRecords = () => {
                   </div>
                 )}
 
+                {rec.isDemo && !rec.fileUrl && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                    Demo/example record only; no document file was uploaded or processed.
+                  </p>
+                )}
+
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem' }}>
-                  <Button variant="outline" size="sm" icon={Eye} onClick={() => setViewerDoc(rec)}>
-                    View Document
-                  </Button>
-                  <Button variant="outline" size="sm" icon={Download} onClick={() => handleDownload(rec)}>
-                    Download
-                  </Button>
+                  {rec.fileUrl && (
+                    <>
+                      <Button variant="outline" size="sm" icon={Eye} onClick={() => setViewerDoc(rec)}>
+                        View Document
+                      </Button>
+                      <Button variant="outline" size="sm" icon={Download} onClick={() => handleDownload(rec)}>
+                        Download
+                      </Button>
+                    </>
+                  )}
                   <Button variant="outline" size="sm" icon={FileText} onClick={() => setDetailsDoc(rec)}>
                     View Details
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon={Bot}
-                    style={{ backgroundColor: 'var(--accent-purple-light)', color: 'var(--accent-purple)', border: '1px solid rgba(124, 58, 237, 0.2)' }}
-                    onClick={() => setChatDoc(rec)}
-                    disabled={rec.processingStatus === 'failed' && !rec.extractedText}
-                  >
-                    Ask MediCare AI
-                  </Button>
+                  {(rec.fileUrl || rec.extractedText) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Bot}
+                      style={{ backgroundColor: 'var(--accent-purple-light)', color: 'var(--accent-purple)', border: '1px solid rgba(124, 58, 237, 0.2)' }}
+                      onClick={() => setChatDoc(rec)}
+                      disabled={rec.processingStatus === 'failed' && !rec.extractedText}
+                    >
+                      Ask MediCare AI
+                    </Button>
+                  )}
                   {rec.processingStatus === 'failed' && (
                     <Button variant="outline" size="sm" icon={RefreshCw} onClick={() => handleReprocess(rec)}>
                       Retry

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   Package,
@@ -10,27 +10,11 @@ import {
   Plus,
   TrendingUp,
   AlertCircle,
-  DollarSign,
   Phone,
   Mail,
-  MapPin,
   Pill,
   Users,
-  LayoutGrid,
-  Menu,
-  FileText,
-  Loader2,
   Stethoscope,
-  ShieldCheck,
-  Receipt,
-  Search,
-  Eye,
-  Syringe,
-  ShieldAlert,
-  Truck,
-  Heart,
-  FileCheck,
-  Beaker,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { StatCard, Card } from '../components/ui/Card';
@@ -284,6 +268,57 @@ export const HospitalDashboard = () => {
         />
       </div>
 
+      <div className="hospital-stat-grid" style={{ marginBottom: '1rem' }}>
+        <StatCard
+          title="Doctors"
+          value={stats.doctorCount ?? 0}
+          unit="associated with this facility"
+          badgeText="Hospital network"
+          badgeType="info"
+          trend="stable"
+          trendValue="Current"
+          icon={Stethoscope}
+          iconBgColor="var(--primary-100)"
+          iconColor="var(--primary-700)"
+        />
+        <StatCard
+          title="Patients"
+          value={stats.patientCount ?? 0}
+          unit="with facility appointments"
+          badgeText="Distinct patients"
+          badgeType="info"
+          trend="stable"
+          trendValue="All time"
+          icon={Users}
+          iconBgColor="var(--primary-100)"
+          iconColor="var(--primary-700)"
+        />
+        <StatCard
+          title="Today's Appointments"
+          value={stats.todayAppointmentCount ?? 0}
+          unit="scheduled today"
+          badgeText="Facility appointments"
+          badgeType="info"
+          trend="stable"
+          trendValue="Today"
+          icon={Clock}
+          iconBgColor="var(--accent-blue-light)"
+          iconColor="var(--primary-700)"
+        />
+        <StatCard
+          title="Pending Appointments"
+          value={stats.pendingAppointmentCount ?? 0}
+          unit="pending or confirmed"
+          badgeText={`${stats.completedAppointmentCount ?? 0} completed`}
+          badgeType="warning"
+          trend="stable"
+          trendValue="All time"
+          icon={AlertCircle}
+          iconBgColor="var(--accent-amber-light)"
+          iconColor="var(--accent-amber)"
+        />
+      </div>
+
       {/* Facility profile + recent orders */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1rem', marginBottom: '0.5rem' }}>
         {/* Facility information card */}
@@ -313,7 +348,7 @@ export const HospitalDashboard = () => {
             <div className="hospital-profile-details">
               <div className="hospital-profile-row">
                 <span>Registration / License</span>
-                <strong>{hospital?.registrationNumber || 'HOSP-2024-ND-0881'}</strong>
+                <strong>{hospital?.registrationNumber || 'Not provided'}</strong>
               </div>
               <div className="hospital-profile-row">
                 <span>Operating Hours</span>
@@ -321,7 +356,7 @@ export const HospitalDashboard = () => {
               </div>
               <div className="hospital-profile-row">
                 <span>GST / Tax Rate</span>
-                <strong>{hospital?.taxRate || 18}%</strong>
+                <strong>{hospital?.taxRate ?? 0}%</strong>
               </div>
               <div className="hospital-profile-row">
                 <span>Location</span>

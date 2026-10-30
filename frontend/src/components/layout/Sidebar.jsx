@@ -15,7 +15,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Stethoscope
+  Stethoscope,
+  ShoppingBag,
+  Apple,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './layout.css';
@@ -51,6 +53,8 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       { label: 'Reminders', path: '/reminders', icon: Bell },
       { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
       { label: 'Nearby Healthcare', path: '/nearby', icon: MapPin },
+      { label: 'Medicine Orders', path: '/orders', icon: ShoppingBag },
+      { label: 'Diet & Wellness', path: '/diet', icon: Apple },
       { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
     ];
   };

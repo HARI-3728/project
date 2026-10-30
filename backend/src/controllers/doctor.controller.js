@@ -106,7 +106,7 @@ const getDoctorDashboard = async (req, res, next) => {
         appointmentDate: { $gte: startOfToday, $lte: endOfToday },
       })
         .populate('patient', 'name phone email avatar')
-        .sort({ appointmentTime: 1 })
+        .sort({ startTime: 1 })
         .lean(),
       Appointment.countDocuments({ doctor: doctorUserId, status: 'pending' }),
       Appointment.countDocuments({ doctor: doctorUserId, status: 'completed' }),

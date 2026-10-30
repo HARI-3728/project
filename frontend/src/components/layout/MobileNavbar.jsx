@@ -16,7 +16,9 @@ import {
   MapPin,
   Bot,
   LogOut,
-  PhoneCall
+  PhoneCall,
+  ShoppingBag,
+  Apple
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './layout.css';
@@ -51,6 +53,8 @@ export const MobileNavbar = () => {
       { label: 'Reminders', path: '/reminders', icon: Bell },
       { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
       { label: 'Nearby Care', path: '/nearby', icon: MapPin },
+      { label: 'Medicine Orders', path: '/orders', icon: ShoppingBag },
+      { label: 'Diet & Wellness', path: '/diet', icon: Apple },
       { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
     ];
   };
