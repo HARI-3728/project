@@ -7,6 +7,12 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { DoctorDashboard } from './pages/DoctorDashboard';
+import {
+  DoctorAppointments,
+  DoctorPrescriptions,
+  DoctorPatients,
+  DoctorNetwork,
+} from './pages/DoctorWorkspace';
 import { HospitalDashboard } from './pages/HospitalDashboard';
 import { Medicines } from './pages/Medicines';
 import { MedicineDetails } from './pages/MedicineDetails';
@@ -82,6 +88,10 @@ export default function App() {
 
             {/* Doctor Dashboard */}
             <Route path="doctor" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
+            <Route path="doctor/appointments" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorAppointments /></ProtectedRoute>} />
+            <Route path="doctor/prescriptions" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorPrescriptions /></ProtectedRoute>} />
+            <Route path="doctor/patients" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorPatients /></ProtectedRoute>} />
+            <Route path="doctor/network" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorNetwork /></ProtectedRoute>} />
 
             {/* Hospital Dashboard */}
             <Route path="hospital" element={<ProtectedRoute allowedRoles={['hospital']}><HospitalDashboard /></ProtectedRoute>} />

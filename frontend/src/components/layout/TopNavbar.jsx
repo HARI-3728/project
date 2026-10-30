@@ -81,6 +81,10 @@ export const TopNavbar = () => {
   const getPageTitle = (pathname) => {
     if (pathname === '/') return 'Health Dashboard';
     if (pathname === '/doctor') return 'Doctor Clinical Hub';
+    if (pathname === '/doctor/appointments') return 'Appointments & OPD';
+    if (pathname === '/doctor/prescriptions') return 'Doctor Prescriptions';
+    if (pathname === '/doctor/patients') return 'Patient Records';
+    if (pathname === '/doctor/network') return 'Hospitals & Network';
     if (pathname === '/hospital') return 'Hospital Facility Management';
     if (pathname.startsWith('/medicines')) return 'Medicine Inventory & Details';
     if (pathname === '/prescriptions') return 'My Prescriptions';

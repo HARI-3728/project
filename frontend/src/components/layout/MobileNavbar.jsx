@@ -5,8 +5,11 @@ import {
   X,
   Stethoscope,
   LayoutDashboard,
+  CalendarCheck,
   Pill,
   FileText,
+  History,
+  Building2,
   Activity,
   Bell,
   Syringe,
@@ -26,9 +29,11 @@ export const MobileNavbar = () => {
   const getNavItems = () => {
     if (user?.role === 'doctor') {
       return [
-        { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
-        { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
-        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin }
+        { label: 'Doctor Dashboard', path: '/doctor', icon: LayoutDashboard, end: true },
+        { label: 'Appointments & OPD', path: '/doctor/appointments', icon: CalendarCheck },
+        { label: 'Prescriptions', path: '/doctor/prescriptions', icon: FileText },
+        { label: 'Patient Records', path: '/doctor/patients', icon: History },
+        { label: 'Hospitals & Network', path: '/doctor/network', icon: Building2 }
       ];
     }
     if (user?.role === 'hospital') {
@@ -154,12 +159,16 @@ export const MobileNavbar = () => {
             )}
 
             <nav className="mobile-drawer-nav">
+              <span className="nav-section-title">
+                {user?.role === 'doctor' ? 'DOCTOR MENU' : user?.role === 'hospital' ? 'HOSPITAL MENU' : 'MAIN MENU'}
+              </span>
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    end={item.end}
                     className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}
                     onClick={handleLinkClick}
                   >

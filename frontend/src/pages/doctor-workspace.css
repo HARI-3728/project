@@ -1,0 +1,176 @@
+.doctor-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.doctor-workspace-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.doctor-workspace-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: var(--radius-card);
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.doctor-workspace-header h1 {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.doctor-workspace-header p {
+  margin-top: 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.doctor-workspace-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.doctor-workspace-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.doctor-workspace-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.doctor-workspace-card h2 {
+  color: var(--color-text);
+  font-size: 0.98rem;
+  font-weight: 750;
+}
+
+.doctor-workspace-card p,
+.doctor-workspace-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.doctor-workspace-status {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.doctor-workspace-status.status-completed {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.doctor-workspace-status.status-cancelled,
+.doctor-workspace-status.status-no-show {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.doctor-workspace-medicines {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.15rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.doctor-workspace-medicines strong {
+  margin-right: 0.4rem;
+  color: var(--color-text);
+}
+
+.doctor-workspace-empty {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.doctor-workspace-error {
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.doctor-patient-record {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-card);
+  background: #f8fafc;
+}
+
+.doctor-patient-record h3 {
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.doctor-patient-record p {
+  color: #334155;
+  font-size: 0.8rem;
+}
+
+.nav-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.sidebar-nav .nav-item:not(.active),
+.mobile-drawer-nav .mobile-nav-item:not(.active) {
+  color: #334155;
+}
+
+.doctor-sidebar:not(.collapsed) .nav-label {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.nav-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.sidebar-nav .nav-item:not(.active):hover,
+.mobile-drawer-nav .mobile-nav-item:not(.active):hover {
+  color: #0f172a;
+}
+
+.mobile-nav-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.mobile-nav-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+@media (max-width: 480px) {
+  .doctor-workspace-card-main {
+    flex-direction: column;
+  }
+}

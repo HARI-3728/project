@@ -2,8 +2,11 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Pill,
+  CalendarCheck,
   FileText,
+  History,
+  Building2,
+  Pill,
   Activity,
   Bell,
   Syringe,
@@ -25,9 +28,11 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     // MediCare AI is PATIENT ONLY - not available to doctors or hospitals
     if (user?.role === 'doctor') {
       return [
-        { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
-        { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
-        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin }
+        { label: 'Doctor Dashboard', path: '/doctor', icon: LayoutDashboard, end: true },
+        { label: 'Appointments & OPD', path: '/doctor/appointments', icon: CalendarCheck },
+        { label: 'Prescriptions', path: '/doctor/prescriptions', icon: FileText },
+        { label: 'Patient Records', path: '/doctor/patients', icon: History },
+        { label: 'Hospitals & Network', path: '/doctor/network', icon: Building2 }
       ];
     }
     if (user?.role === 'hospital') {
@@ -69,7 +74,7 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   };
 
   return (
-    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${user?.role === 'doctor' ? 'doctor-sidebar' : ''}`}>
       {/* Brand Header */}
       <div className="sidebar-brand">
         <div className="brand-logo">
@@ -90,13 +95,16 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
       {/* Main Navigation */}
       <nav className="sidebar-nav">
-        <span className="nav-section-title">{!isCollapsed ? 'MAIN MENU' : '•'}</span>
+        <span className="nav-section-title">
+          {!isCollapsed ? (user?.role === 'doctor' ? 'DOCTOR MENU' : 'MAIN MENU') : '•'}
+        </span>
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.end}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               title={isCollapsed ? item.label : ''}
             >
