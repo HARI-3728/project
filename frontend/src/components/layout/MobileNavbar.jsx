@@ -23,24 +23,63 @@ export const MobileNavbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const navItems = [
-    { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Medicines', path: '/medicines', icon: Pill },
-    { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
-    { label: 'Health Records', path: '/health-records', icon: Activity },
-    { label: 'Reminders', path: '/reminders', icon: Bell },
-    { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
-    { label: 'Nearby Care', path: '/nearby', icon: MapPin },
-    { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
-  ];
+  const getNavItems = () => {
+    if (user?.role === 'doctor') {
+      return [
+        { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
+        { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
+        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin },
+        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+      ];
+    }
+    if (user?.role === 'hospital') {
+      return [
+        { label: 'Hospital Ops', path: '/hospital', icon: LayoutDashboard },
+        { label: 'Pharmacy & Stock', path: '/medicines', icon: Pill },
+        { label: 'Healthcare Network', path: '/nearby', icon: MapPin },
+        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+      ];
+    }
+    return [
+      { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+      { label: 'Medicines', path: '/medicines', icon: Pill },
+      { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
+      { label: 'Health Records', path: '/health-records', icon: Activity },
+      { label: 'Reminders', path: '/reminders', icon: Bell },
+      { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
+      { label: 'Nearby Care', path: '/nearby', icon: MapPin },
+      { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+    ];
+  };
 
-  const bottomNavItems = [
-    { label: 'Home', path: '/', icon: LayoutDashboard },
-    { label: 'Meds', path: '/medicines', icon: Pill },
-    { label: 'AI', path: '/ai-assistant', icon: Bot },
-    { label: 'Reminders', path: '/reminders', icon: Bell },
-    { label: 'Records', path: '/health-records', icon: Activity }
-  ];
+  const getBottomNavItems = () => {
+    if (user?.role === 'doctor') {
+      return [
+        { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
+        { label: 'Meds & Rx', path: '/medicines', icon: Pill },
+        { label: 'Network', path: '/nearby', icon: MapPin },
+        { label: 'AI', path: '/ai-assistant', icon: Bot }
+      ];
+    }
+    if (user?.role === 'hospital') {
+      return [
+        { label: 'Hospital', path: '/hospital', icon: LayoutDashboard },
+        { label: 'Pharmacy', path: '/medicines', icon: Pill },
+        { label: 'Facilities', path: '/nearby', icon: MapPin },
+        { label: 'AI', path: '/ai-assistant', icon: Bot }
+      ];
+    }
+    return [
+      { label: 'Home', path: '/', icon: LayoutDashboard },
+      { label: 'Meds', path: '/medicines', icon: Pill },
+      { label: 'AI', path: '/ai-assistant', icon: Bot },
+      { label: 'Reminders', path: '/reminders', icon: Bell },
+      { label: 'Records', path: '/health-records', icon: Activity }
+    ];
+  };
+
+  const navItems = getNavItems();
+  const bottomNavItems = getBottomNavItems();
 
   const handleLinkClick = () => {
     setIsDrawerOpen(false);
@@ -50,6 +89,17 @@ export const MobileNavbar = () => {
     setIsDrawerOpen(false);
     logout();
     navigate('/login');
+  };
+
+  const getMobileUserSub = () => {
+    if (!user) return '';
+    if (user.role === 'doctor') {
+      return `${user.specialization || 'Doctor'} • ${user.isVerified ? 'Verified' : 'Pending Verification'}`;
+    }
+    if (user.role === 'hospital') {
+      return `${user.type || 'Healthcare Facility'} • ${user.isVerified ? 'Accredited' : 'Pending'}`;
+    }
+    return `Blood: ${user.bloodGroup || 'N/A'} • Age ${user.age || 'N/A'}`;
   };
 
   return (
@@ -66,12 +116,14 @@ export const MobileNavbar = () => {
           </button>
           <div className="mobile-brand">
             <Stethoscope size={22} className="mobile-brand-icon" />
-            <span className="mobile-brand-name">MediCare+</span>
+            <span className="mobile-brand-name">
+              MediCare+ {user?.role === 'doctor' ? '(Doctor)' : user?.role === 'hospital' ? '(Hospital)' : ''}
+            </span>
           </div>
         </div>
 
         <div className="mobile-header-right">
-          <a href="tel:911" className="mobile-emergency-btn" title="Call Emergency 911">
+          <a href="tel:112" className="mobile-emergency-btn" title="Call Emergency 112">
             <PhoneCall size={16} />
           </a>
         </div>
@@ -100,7 +152,7 @@ export const MobileNavbar = () => {
                 <img src={user.avatar} alt={user.name} />
                 <div>
                   <p className="mobile-user-name">{user.name}</p>
-                  <p className="mobile-user-sub">Blood Type: {user.bloodGroup} • Age {user.age}</p>
+                  <p className="mobile-user-sub">{getMobileUserSub()}</p>
                 </div>
               </div>
             )}

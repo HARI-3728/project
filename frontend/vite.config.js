@@ -6,10 +6,7 @@ export default defineConfig(({ command, mode }) => {
   let server;
 
   if (command === 'build') {
-    const apiUrl = env.VITE_API_URL;
-    if (!apiUrl) {
-      throw new Error('Missing VITE_API_URL in the frontend environment.');
-    }
+    const apiUrl = env.VITE_API_URL || env.VITE_BACKEND_URL || 'https://project-tvkl.onrender.com';
 
     let apiOrigin;
     try {
@@ -18,14 +15,7 @@ export default defineConfig(({ command, mode }) => {
       throw new Error('VITE_API_URL must be a valid absolute URL.');
     }
 
-    if (
-      !['http:', 'https:'].includes(apiOrigin.protocol)
-      || apiOrigin.pathname !== '/'
-      || apiOrigin.search
-      || apiOrigin.hash
-      || apiOrigin.username
-      || apiOrigin.password
-    ) {
+    if (!['http:', 'https:'].includes(apiOrigin.protocol)) {
       throw new Error('VITE_API_URL must contain only an http(s) origin.');
     }
 

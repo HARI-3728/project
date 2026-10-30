@@ -80,19 +80,19 @@ export const Dashboard = () => {
 
   const reminders = (dashboardData?.activeReminders || []).map((reminder) => ({
     id: reminder._id,
-    medName: reminder.medicineName,
+    medName: reminder.medicineName || 'Medicine',
     time: reminder.times?.[0] || 'Time not set',
     dosage: reminder.dosage || 'Dosage not listed',
     withFood: /with food/i.test(reminder.instructions || ''),
     taken: (reminder.takenLog || []).some((entry) =>
-      entry.status === 'taken' && new Date(entry.takenAt).toDateString() === new Date().toDateString()
+      entry?.status === 'taken' && entry?.takenAt && new Date(entry.takenAt).toDateString() === new Date().toDateString()
     )
   }));
   const healthRecords = (dashboardData?.recentHealthRecords || []).map((record) => ({
     id: record._id,
-    title: record.title,
+    title: record.title || 'Health Record',
     facility: record.hospitalName || 'Facility not listed',
-    date: record.recordDate ? new Date(record.recordDate).toLocaleDateString() : '',
+    date: record.recordDate ? new Date(record.recordDate).toLocaleDateString() : 'Date not set',
     status: record.fileUrl ? 'File attached' : 'Saved'
   }));
   const popularMedicines = medicineCatalog.slice(0, 4);

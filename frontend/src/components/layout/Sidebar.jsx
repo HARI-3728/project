@@ -21,20 +21,51 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const navItems = [
-    { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Medicines', path: '/medicines', icon: Pill },
-    { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
-    { label: 'Health Records', path: '/health-records', icon: Activity },
-    { label: 'Reminders', path: '/reminders', icon: Bell },
-    { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
-    { label: 'Nearby Healthcare', path: '/nearby', icon: MapPin },
-    { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
-  ];
+  const getNavItems = () => {
+    if (user?.role === 'doctor') {
+      return [
+        { label: 'Doctor Hub', path: '/doctor', icon: Stethoscope },
+        { label: 'Medicines & Rx', path: '/medicines', icon: Pill },
+        { label: 'Nearby Facilities', path: '/nearby', icon: MapPin },
+        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+      ];
+    }
+    if (user?.role === 'hospital') {
+      return [
+        { label: 'Hospital Ops', path: '/hospital', icon: LayoutDashboard },
+        { label: 'Pharmacy & Stock', path: '/medicines', icon: Pill },
+        { label: 'Healthcare Network', path: '/nearby', icon: MapPin },
+        { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+      ];
+    }
+    return [
+      { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+      { label: 'Medicines', path: '/medicines', icon: Pill },
+      { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
+      { label: 'Health Records', path: '/health-records', icon: Activity },
+      { label: 'Reminders', path: '/reminders', icon: Bell },
+      { label: 'Vaccinations', path: '/vaccinations', icon: Syringe },
+      { label: 'Nearby Healthcare', path: '/nearby', icon: MapPin },
+      { label: 'MediCare AI', path: '/ai-assistant', icon: Bot, isNew: true }
+    ];
+  };
+
+  const navItems = getNavItems();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const getUserSubtitle = () => {
+    if (!user) return '';
+    if (user.role === 'doctor') {
+      return user.specialization || 'Clinical Specialist';
+    }
+    if (user.role === 'hospital') {
+      return user.type || 'Facility Admin';
+    }
+    return `Blood: ${user.bloodGroup || 'Not set'}`;
   };
 
   return (
@@ -47,7 +78,9 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         {!isCollapsed && (
           <div className="brand-info">
             <span className="brand-name">MediCare<span className="brand-plus">+</span></span>
-            <span className="brand-tagline">Healthcare Portal</span>
+            <span className="brand-tagline">
+              {user?.role === 'doctor' ? 'Clinical Suite' : user?.role === 'hospital' ? 'Hospital Suite' : 'Healthcare Portal'}
+            </span>
           </div>
         )}
         <button className="collapse-toggle" onClick={toggleCollapse} title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -88,7 +121,7 @@ export const Sidebar = ({ isCollapsed, toggleCollapse }) => {
             {!isCollapsed && (
               <div className="user-details">
                 <span className="user-name">{user.name}</span>
-                <span className="user-blood-group">Blood Type: <strong>{user.bloodGroup}</strong></span>
+                <span className="user-blood-group">{getUserSubtitle()}</span>
               </div>
             )}
           </div>

@@ -1,8 +1,5 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL;
-const apiUrl = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:5000' : '');
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL in the frontend environment.');
-}
+const configuredApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+const apiUrl = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://project-tvkl.onrender.com');
 
 let parsedApiUrl;
 try {
@@ -11,15 +8,8 @@ try {
   throw new Error('VITE_API_URL must be an absolute http(s) origin without a path.');
 }
 
-if (
-  !['http:', 'https:'].includes(parsedApiUrl.protocol)
-  || parsedApiUrl.pathname !== '/'
-  || parsedApiUrl.search
-  || parsedApiUrl.hash
-  || parsedApiUrl.username
-  || parsedApiUrl.password
-) {
-  throw new Error('VITE_API_URL must be an absolute http(s) origin without a path.');
+if (!['http:', 'https:'].includes(parsedApiUrl.protocol)) {
+  throw new Error('VITE_API_URL must be an absolute http(s) origin.');
 }
 
 const isLoopbackApiHost = parsedApiUrl.hostname === 'localhost'

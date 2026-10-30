@@ -89,7 +89,8 @@ export const Prescriptions = () => {
     const loadPrescriptions = async () => {
       try {
         const data = await api.get('/prescriptions/my', { requireAuth: true });
-        setPrescriptions(Array.isArray(data) ? data : (data.data || []));
+        const list = Array.isArray(data) ? data : (data.data || []);
+        setPrescriptions(list.map(mapPrescription));
       } catch (error) {
         setLoadError(error.message || 'Unable to load prescriptions.');
       } finally {

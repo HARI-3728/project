@@ -28,7 +28,12 @@ export const TopNavbar = () => {
   const [notificationError, setNotificationError] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setNotificationError('');
+      return;
+    }
 
     const loadNotifications = async () => {
       try {
@@ -36,11 +41,13 @@ export const TopNavbar = () => {
           api.get('/notifications?page=1&limit=10', { requireAuth: true }),
           api.get('/notifications/unread-count', { requireAuth: true })
         ]);
-        setNotifications(items);
-        setUnreadCount(unread.count);
+        setNotifications(Array.isArray(items) ? items : []);
+        setUnreadCount(typeof unread?.count === 'number' ? unread.count : 0);
         setNotificationError('');
       } catch (error) {
         setNotificationError(error.message || 'Unable to load notifications.');
+        setNotifications([]);
+        setUnreadCount(0);
       }
     };
 
@@ -73,6 +80,8 @@ export const TopNavbar = () => {
 
   const getPageTitle = (pathname) => {
     if (pathname === '/') return 'Health Dashboard';
+    if (pathname === '/doctor') return 'Doctor Clinical Hub';
+    if (pathname === '/hospital') return 'Hospital Facility Management';
     if (pathname.startsWith('/medicines')) return 'Medicine Inventory & Details';
     if (pathname === '/prescriptions') return 'My Prescriptions';
     if (pathname === '/health-records') return 'Health Records';
@@ -155,24 +164,25 @@ export const TopNavbar = () => {
                     <span>{notificationError}</span>
                   </div>
                 )}
-                {notifications.length ? notifications.map((notification) => (
+                {!notificationError && notifications.length > 0 ? notifications.map((notification) => (
                   <button
                     type="button"
-                    key={notification._id}
-                    className={`notification-item ${notification.isRead ? '' : 'unread'}`}
-                    onClick={() => markNotificationRead(notification)}
+                    key={notification?._id || Math.random()}
+                    className={`notification-item ${notification?.isRead ? '' : 'unread'}`}
+                    onClick={() => notification?._id && markNotificationRead(notification)}
                   >
                     <div className="notif-icon bg-emerald">
-                      {notification.isRead ? <Bell size={16} /> : <CheckCircle2 size={16} />}
+                      {notification?.isRead ? <Bell size={16} /> : <CheckCircle2 size={16} />}
                     </div>
                     <div className="notif-content">
-                      <p className="notif-text"><strong>{notification.title}</strong> {notification.message}</p>
+                      <p className="notif-text"><strong>{notification?.title || 'Notification'}</strong> {notification?.message || ''}
+                      </p>
                       <span className="notif-time">
-                        {notification.createdAt ? new Date(notification.createdAt).toLocaleString() : ''}
+                        {notification?.createdAt ? new Date(notification.createdAt).toLocaleString() : ''}
                       </span>
                     </div>
                   </button>
-                )) : !notificationError && <p className="notif-time">No notifications.</p>}
+                )) : !notificationError && notifications.length === 0 && <p className="notif-time">No notifications.</p>}
               </div>
             </div>
           )}
@@ -199,14 +209,26 @@ export const TopNavbar = () => {
                   <p className="user-panel-name">{user.name}</p>
                   <p className="user-panel-email">{user.email}</p>
                   <div className="user-panel-tags">
-                    <span className="badge badge-success">ID: {user.medicalID || 'Not assigned'}</span>
-                    <span className="badge badge-info">{user.bloodGroup || 'Not provided'}</span>
+                    <span className="badge badge-success">
+                      {user.role === 'doctor' ? `Dr. (${user.specialization || 'Clinical'})` : user.role === 'hospital' ? `Facility (${user.type || 'Hospital'})` : `ID: ${user.medicalID || 'Assigned'}`}
+                    </span>
+                    <span className="badge badge-info">
+                      {user.role === 'doctor' ? (user.isVerified ? 'Verified' : 'Pending Verification') : user.role === 'hospital' ? (user.isVerified ? 'Accredited' : 'Pending') : (user.bloodGroup || 'Blood: N/A')}
+                    </span>
                   </div>
                 </div>
                 <div className="user-panel-divider"></div>
-                <button className="dropdown-item" onClick={() => navigate('/health-records')}>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowUserDropdown(false);
+                    if (user.role === 'doctor') navigate('/doctor');
+                    else if (user.role === 'hospital') navigate('/hospital');
+                    else navigate('/health-records');
+                  }}
+                >
                   <User size={16} />
-                  <span>My Health Profile</span>
+                  <span>{user.role === 'doctor' ? 'Doctor Hub' : user.role === 'hospital' ? 'Facility Hub' : 'My Health Profile'}</span>
                 </button>
                 <button className="dropdown-item danger" onClick={logout}>
                   <LogOut size={16} />

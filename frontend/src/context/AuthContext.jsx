@@ -6,16 +6,22 @@ const USER_KEY = 'medicare_user';
 const FALLBACK_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
 const normalizeUser = (userData = {}, profile = {}) => {
+  const role = userData.role || 'patient';
+  const defaultName = role === 'doctor' ? 'Doctor User' : role === 'hospital' ? 'Hospital Facility' : 'Patient User';
   return {
     ...userData,
     id: userData.id || userData._id,
     _id: userData._id || userData.id,
-    name: userData.name || 'Patient User',
+    name: userData.name || defaultName,
     email: userData.email || '',
+    role,
     avatar: userData.avatar || FALLBACK_AVATAR,
-    bloodGroup: profile.bloodGroup || userData.bloodGroup || 'Not provided',
-    medicalID: userData.medicalID || '',
+    bloodGroup: profile?.bloodGroup || userData.bloodGroup || 'Not provided',
+    medicalID: userData.medicalID || (role === 'patient' ? `MED-${String(userData._id || userData.id || '').slice(-6).toUpperCase()}` : ''),
     phone: userData.phone || userData.emergencyContact || '',
+    specialization: profile?.specialization || userData.specialization || '',
+    hospitalName: profile?.hospitalName || userData.hospitalName || '',
+    isVerified: profile?.isVerified ?? userData.isVerified ?? false,
   };
 };
 
@@ -69,7 +75,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password }, { requireAuth: false });
-    const nextUser = normalizeUser(response.user, {});
+    const nextUser = normalizeUser(response.user, response.profile || {});
     persistSession(response.token, nextUser);
     return nextUser;
   };
@@ -81,12 +87,20 @@ export const AuthProvider = ({ children }) => {
       password: userData.password,
       phone: userData.phone || userData.emergencyContact,
       role: userData.role || 'patient',
-      ...(userData.role === 'doctor' ? { specialization: userData.specialization } : {}),
-      ...(userData.role === 'hospital' ? { hospitalName: userData.hospitalName } : {}),
+      ...(userData.role === 'doctor' ? {
+        specialization: userData.specialization,
+        registrationNumber: userData.registrationNumber,
+        experience: userData.experience
+      } : {}),
+      ...(userData.role === 'hospital' ? {
+        hospitalName: userData.hospitalName,
+        registrationNumber: userData.registrationNumber,
+        type: userData.hospitalType || 'private'
+      } : {}),
     };
 
     const response = await api.post('/auth/register', payload, { requireAuth: false });
-    const nextUser = normalizeUser(response.user, {});
+    const nextUser = normalizeUser(response.user, response.profile || {});
     persistSession(response.token, nextUser);
     return nextUser;
   };
