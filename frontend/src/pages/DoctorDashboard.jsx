@@ -14,6 +14,7 @@ import {
   UserCheck,
   MessageSquare,
   Building2,
+  AlertCircle,
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -148,6 +149,24 @@ import './doctor.css';
     }
   };
 
+  const stats = dashboardData?.stats || {};
+  const todayAppointments = dashboardData?.todayAppointments || [];
+  const recentPrescriptions = dashboardData?.recentPrescriptions || [];
+  const isVerified = profile?.isVerified ?? false;
+
+  const doctorProfile = useMemo(() => ({
+    specialization: profile?.specialization || dashboardData?.profile?.specialization || 'General Physician',
+    experience: profile?.experience ?? dashboardData?.profile?.experience ?? 0,
+    consultationFee: profile?.consultationFee ?? dashboardData?.profile?.consultationFee ?? 500,
+    registrationNumber: profile?.registrationNumber ?? dashboardData?.profile?.registrationNumber ?? 'Pending Filing',
+    hospital: profile?.hospital ?? dashboardData?.profile?.hospital ?? null,
+  }), [profile, dashboardData?.profile]);
+
+  const nextAppointment = useMemo(() => {
+    const upcoming = (dashboardData?.todayAppointments || []).filter((apt) => apt.status !== 'completed');
+    return upcoming[0] || null;
+  }, [dashboardData?.todayAppointments]);
+
   if (isLoading) {
     return (
       <div className="dashboard-page fade-in">
@@ -167,24 +186,6 @@ import './doctor.css';
       </div>
     );
   }
-
-  const stats = dashboardData?.stats || {};
-  const todayAppointments = dashboardData?.todayAppointments || [];
-  const recentPrescriptions = dashboardData?.recentPrescriptions || [];
-  const isVerified = profile?.isVerified ?? false;
-
-  const doctorProfile = useMemo(() => ({
-    specialization: profile?.specialization || dashboardData?.profile?.specialization || 'General Physician',
-    experience: profile?.experience ?? dashboardData?.profile?.experience ?? 0,
-    consultationFee: profile?.consultationFee ?? dashboardData?.profile?.consultationFee ?? 500,
-    registrationNumber: profile?.registrationNumber ?? dashboardData?.profile?.registrationNumber ?? 'Pending Filing',
-    hospital: profile?.hospital ?? dashboardData?.profile?.hospital ?? null,
-  }), [profile, dashboardData?.profile]);
-
-  const nextAppointment = useMemo(() => {
-    const upcoming = todayAppointments.filter((apt) => apt.status !== 'completed');
-    return upcoming[0] || null;
-  }, [todayAppointments]);
 
   return (
     <div className="dashboard-page fade-in">
@@ -644,5 +645,3 @@ import './doctor.css';
       </Modal>   </div>
   );
 };
-
-
