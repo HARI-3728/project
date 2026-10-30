@@ -30,6 +30,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const isPatient = user?.role === 'patient';
 
+  // All hooks declared before any conditional return.
   const [dashSearch, setDashSearch] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
   const [medicineCatalog, setMedicineCatalog] = useState([]);
@@ -109,7 +110,9 @@ export const Dashboard = () => {
     }
   };
 
-  if (user?.role !== 'patient') {
+  // Non-patient accounts get a small static placeholder.
+  // This branch no longer comes before the hooks above.
+  if (!isPatient) {
     return (
       <div className="dashboard-page">
         <div className="upload-alert error" role="alert">
