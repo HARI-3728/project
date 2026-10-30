@@ -1,43 +1,18 @@
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const { generalLimiter } = require('./middleware/rateLimiter.middleware');
 const errorHandler = require('./middleware/error.middleware');
 const logger = require('./utils/logger');
-const { getFrontendOrigins, parseOrigin } = require('./config/env');
+const { configureCors } = require('./middleware/cors');
 
 const app = express();
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
-const allowedOrigins = getFrontendOrigins(process.env.FRONTEND_URL);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-
-      let normalizedOrigin;
-      try {
-        normalizedOrigin = parseOrigin(origin, 'Origin').origin;
-      } catch {
-        callback(null, false);
-        return;
-      }
-
-      callback(null, allowedOrigins.includes(normalizedOrigin));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 204,
-  })
-);
+// Configure CORS middleware BEFORE any API routes.
+// This handles both actual requests and OPTIONS preflight requests.
+app.use(configureCors());
 
 // ─── Security Middleware ────────────────────────────────────────────────────
 app.use(helmet());

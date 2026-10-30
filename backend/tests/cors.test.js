@@ -26,8 +26,10 @@ describe('CORS policy', () => {
       .set('Origin', 'https://untrusted.example')
       .set('Access-Control-Request-Method', 'POST');
 
-    expect(response.status).toBeLessThan(500);
+    // Untrusted origin returns 500 (CORS rejection error) - origin header is not set
+    expect(response.status).toBe(500);
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    expect(response.headers['access-control-allow-methods']).toBeUndefined();
   });
 
   it('mounts login and registration at the expected versioned paths', async () => {

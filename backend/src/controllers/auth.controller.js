@@ -31,17 +31,28 @@ const register = async (req, res, next) => {
     if (role === 'patient') {
       await PatientProfile.create({ user: user._id });
     } else if (role === 'doctor') {
-      const { specialization } = req.body;
+      const { specialization, registrationNumber, experience } = req.body;
       if (!specialization) {
         return sendError(res, 400, 'Specialization is required for doctor registration.');
       }
-      await DoctorProfile.create({ user: user._id, specialization });
+      await DoctorProfile.create({
+        user: user._id,
+        specialization,
+        registrationNumber: registrationNumber || '',
+        experience: Number(experience) || 0,
+        isVerified: false,
+      });
     } else if (role === 'hospital') {
-      const { hospitalName } = req.body;
+      const { hospitalName, registrationNumber, type } = req.body;
       if (!hospitalName) {
         return sendError(res, 400, 'Hospital name is required for hospital registration.');
       }
-      await Hospital.create({ user: user._id, hospitalName });
+      await Hospital.create({
+        user: user._id,
+        hospitalName,
+        registrationNumber: registrationNumber || '',
+        type: type || 'private',
+      });
     }
 
     const token = user.generateToken();

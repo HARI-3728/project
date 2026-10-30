@@ -22,13 +22,22 @@ const parseOrigin = (value, name) => {
 const getFrontendOrigins = (value = '') => {
   if (!value.trim()) return [];
 
-  return value.split(',').map((entry) => {
+  const entries = value.split(',');
+  const origins = [];
+  
+  for (const entry of entries) {
     const origin = entry.trim();
     if (!origin) {
       throw new Error('FRONTEND_URL must contain one or more http(s) origins.');
     }
-    return parseOrigin(origin, 'FRONTEND_URL').origin;
-  });
+    origins.push(parseOrigin(origin, 'FRONTEND_URL').origin);
+  }
+  
+  if (origins.length === 0) {
+    throw new Error('FRONTEND_URL must contain one or more http(s) origins.');
+  }
+  
+  return origins;
 };
 
 const getServerConfig = (env = process.env) => {
